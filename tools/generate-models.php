@@ -110,6 +110,9 @@ $usedNames = [];
 /** @var array<string, array{type: string, values: list<int|string>}> $enumsToGenerate */
 $enumsToGenerate = [];
 
+/** @var array<string, array{props: array<string, array<string, mixed>>, readOnly: array<string, bool>}> $inlineModels */
+$inlineModels = [];
+
 // Seed overrides + enum-definitions so DTO refs resolve to them.
 foreach ($intOverrides as $key => $className) {
     $enumNames[$key] = $className;
@@ -198,6 +201,11 @@ function resolveType(string $definition, string $property, array $schema): array
 
     $type = $schema['type'] ?? 'string';
 
+    // Inline object with a known shape -> generate a dedicated nested model class.
+    if ($type === 'object' && isset($schema['properties']) && is_array($schema['properties'])) {
+        return resolveInlineObject($definition, $property, $schema);
+    }
+
     return match ($type) {
         'integer' => ['php' => 'int', 'doc' => 'int', 'kind' => 'scalar'],
         'number' => ['php' => 'float', 'doc' => 'float', 'kind' => 'scalar'],
@@ -206,6 +214,32 @@ function resolveType(string $definition, string $property, array $schema): array
         'object' => ['php' => 'array', 'doc' => 'array<string, mixed>', 'kind' => 'raw'],
         default => ['php' => 'string', 'doc' => 'string', 'kind' => 'scalar'],
     };
+}
+
+/**
+ * Register an inline object as a nested model and return a reference to it.
+ *
+ * @param array<string, mixed> $schema
+ *
+ * @return array{php: string, doc: string, kind: string}
+ */
+function resolveInlineObject(string $definition, string $property, array $schema): array
+{
+    global $inlineModels;
+
+    $className = $definition . pascal($property);
+
+    /** @var array<string, array<string, mixed>> $props */
+    $props = $schema['properties'];
+    $readOnly = [];
+
+    foreach ($props as $propName => $propSchema) {
+        $readOnly[$propName] = (bool) ($propSchema['readOnly'] ?? false);
+    }
+
+    $inlineModels[$className] = ['props' => $props, 'readOnly' => $readOnly];
+
+    return ['php' => $className, 'doc' => $className, 'kind' => 'model'];
 }
 
 /**
@@ -328,6 +362,26 @@ foreach ($definitions as $name => $def) {
     [$code, $usesEnum] = generateModel($name, $info['props'], $info['readOnly'], $listing, $info['listItem']);
     file_put_contents(SRC . "/Model/{$name}.php", $code);
     $generatedModels[] = $name;
+}
+
+// Inline objects are discovered lazily during model generation; generate them too
+// (and any nested inline objects they discover in turn).
+$processedInline = [];
+
+while (true) {
+    $pending = array_diff(array_keys($inlineModels), $processedInline);
+
+    if ($pending === []) {
+        break;
+    }
+
+    foreach ($pending as $inlineName) {
+        $inline = $inlineModels[$inlineName];
+        [$code] = generateModel($inlineName, $inline['props'], $inline['readOnly'], false, null);
+        file_put_contents(SRC . "/Model/{$inlineName}.php", $code);
+        $generatedModels[] = $inlineName;
+        $processedInline[] = $inlineName;
+    }
 }
 
 // Enums are registered lazily during model generation; emit them afterwards.

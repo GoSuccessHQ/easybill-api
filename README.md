@@ -1,16 +1,19 @@
 # easybill API – PHP Client
 
-A modern, strongly-typed PHP client for the [easybill REST API](https://api.easybill.de/rest/v1/swagger.json),
-built for **PHP 8.4+** with first-class **rate-limit handling**.
+A modern, strongly-typed, **dependency-free** PHP client for the
+[easybill REST API](https://api.easybill.de/rest/v1/swagger.json), built for
+**PHP 8.4+** with first-class **rate-limit handling**.
 
 > [!WARNING]
 > This library is under active development and not yet stable.
 
 ## Features
 
-- **PHP 8.4+**, fully typed `final readonly` DTOs and native enums.
-- **PSR-18 / PSR-17** based — bring your own HTTP client (Guzzle, Symfony HttpClient, …)
-  via [`php-http/discovery`](https://github.com/php-http/discovery), no hard dependency.
+- **PHP 8.4+**, fully typed `final readonly` DTOs and native enums for every API model.
+- **Zero Composer dependencies** — ships with a self-contained cURL transport
+  (only the `ext-curl` and `ext-json` PHP extensions are required).
+- **Pluggable transport**: implement the small `HttpClient` interface to route
+  requests through your own HTTP stack (e.g. Guzzle) — without the library depending on it.
 - **Built-in rate limiting.** easybill currently allows 10 or 60 requests/minute and does not
   reliably advertise the limit in response headers. The client therefore throttles requests
   **proactively** and the limit is **freely configurable**.
@@ -21,20 +24,13 @@ built for **PHP 8.4+** with first-class **rate-limit handling**.
 
 ## Requirements
 
-- PHP **8.4** or higher (the `dom`, `xml` and `mbstring` extensions are only needed for running
-  the test suite).
-- A PSR-18 HTTP client and PSR-17 factories (auto-discovered).
+- PHP **8.4** or higher
+- `ext-curl` and `ext-json`
 
 ## Installation
 
 ```bash
 composer require gosuccess/easybill-api
-```
-
-If you do not already have a PSR-18 client installed, add one, e.g.:
-
-```bash
-composer require guzzlehttp/guzzle
 ```
 
 ## Quick start
@@ -52,10 +48,32 @@ $client = new Client(new ClientConfig(
 
 // Fetch a single customer
 $customer = $client->customers->get(12345);
+echo $customer->companyName;
 
-// Iterate over ALL customers, page by page (rate-limited automatically)
-foreach ($client->customers->all() as $customer) {
-    echo $customer->companyName . PHP_EOL;
+// Create a customer
+use GoSuccess\Easybill\Model\Customer;
+use GoSuccess\Easybill\Enum\Salutation;
+
+$created = $client->customers->create(new Customer(
+    companyName: 'ACME GmbH',
+    salutation: Salutation::Company,
+    emails: ['billing@acme.example'],
+));
+```
+
+## Pagination
+
+Each list endpoint offers `list()` for a single page and `all()` for a lazy
+iterator over every page (each page request is rate-limited automatically):
+
+```php
+// One page
+$page = $client->customers->list(page: 1, limit: 100, filters: ['country' => 'DE']);
+echo $page->total, ' customers in total';
+
+// All customers, transparently across pages
+foreach ($client->customers->all(filters: ['country' => 'DE']) as $customer) {
+    echo $customer->companyName, PHP_EOL;
 }
 ```
 
@@ -64,14 +82,79 @@ foreach ($client->customers->all() as $customer) {
 The request limit is configured via `ClientConfig::$requestsPerMinute`. The default
 `SlidingWindowRateLimiter` keeps the client below that threshold so you avoid `429` responses
 entirely. You can swap in your own implementation of the `RateLimiter` interface (for example a
-Redis-backed limiter shared across processes).
+Redis-backed limiter shared across processes):
+
+```php
+use GoSuccess\Easybill\Client;
+use GoSuccess\Easybill\ClientConfig;
+
+$client = new Client(
+    config: new ClientConfig(token: 'your-api-key'),
+    rateLimiter: new MyRedisRateLimiter(/* ... */),
+);
+```
+
+## Error handling
+
+Every error thrown by the library implements `GoSuccess\Easybill\Exception\EasybillException`:
+
+```php
+use GoSuccess\Easybill\Exception\NotFoundException;
+use GoSuccess\Easybill\Exception\RateLimitException;
+use GoSuccess\Easybill\Exception\ValidationException;
+
+try {
+    $client->customers->get(999999);
+} catch (NotFoundException $e) {
+    // 404
+} catch (ValidationException $e) {
+    // 422 — inspect $e->responseBody
+} catch (RateLimitException $e) {
+    // 429 — $e->retryAfter holds the seconds to wait, if provided
+}
+```
+
+## Custom transport
+
+Bring your own HTTP client by implementing `HttpClient`:
+
+```php
+use GoSuccess\Easybill\Client;
+use GoSuccess\Easybill\ClientConfig;
+use GoSuccess\Easybill\Http\HttpClient;
+use GoSuccess\Easybill\Http\Request;
+use GoSuccess\Easybill\Http\Response;
+
+final class GuzzleTransport implements HttpClient
+{
+    public function send(Request $request): Response { /* ... */ }
+}
+
+$client = new Client(
+    config: new ClientConfig(token: 'your-api-key'),
+    httpClient: new GuzzleTransport(),
+);
+```
+
+## Available resources
+
+`customers`, `contacts`, `customerGroups`, `documents`, `documentPayments`,
+`positions`, `positionGroups`, `discountPositions`, `discountPositionGroups`,
+`projects`, `tasks`, `textTemplates`, `timeTrackings`, `attachments`, `postBoxes`,
+`sepaPayments`, `serialNumbers`, `stocks`, `logins`, `webhooks`, `pdfTemplates`.
 
 ## Development
 
+The data models and enums are generated from the official Swagger specification:
+
 ```bash
-composer install
-composer check   # runs php-cs-fixer, phpstan (level max) and phpunit
+php tools/generate-models.php          # regenerate from the live spec
+composer cs-fix                        # apply code style
+composer check                         # php-cs-fixer + phpstan (level max) + phpunit
 ```
+
+> Running the test suite additionally requires the `dom`, `xml`, `xmlwriter`,
+> `mbstring` and `tokenizer` PHP extensions (PHPUnit dependencies).
 
 ## License
 

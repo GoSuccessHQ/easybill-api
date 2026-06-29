@@ -34,7 +34,7 @@ final class Connection
      * @param array<string, scalar|array<int|string, scalar>|null> $query
      * @param array<string, mixed>|null                            $body
      *
-     * @return array<mixed> The decoded response, or an empty array for `204 No Content`.
+     * @return array<string, mixed> The decoded response, or an empty array for `204 No Content`.
      */
     public function requestJson(Method $method, string $path, array $query = [], ?array $body = null): array
     {
@@ -166,7 +166,7 @@ final class Connection
     }
 
     /**
-     * @return array<mixed>
+     * @return array<string, mixed>
      */
     private function decodeJson(Response $response): array
     {
@@ -190,6 +190,7 @@ final class Connection
             throw new SerializationException('Expected a JSON object or array in the response body.');
         }
 
+        /** @var array<string, mixed> $decoded */
         return $decoded;
     }
 

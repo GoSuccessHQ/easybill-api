@@ -146,6 +146,13 @@ $client = new Client(
 );
 ```
 
+## Documentation & examples
+
+- **[docs/](docs/)** — a reference page for every resource method (endpoint,
+  signature, parameters and a usage example).
+- **[examples/](examples/)** — runnable example scripts (CRUD, pagination,
+  documents, error handling, rate limiting, custom transport).
+
 ## Available resources
 
 `customers`, `contacts`, `customerGroups`, `documents`, `documentPayments`,
@@ -161,6 +168,7 @@ Swagger specification, and the plain resource classes from a declarative config:
 ```bash
 php tools/generate-models.php          # enums, DTOs and typed filters from the live spec
 php tools/generate-resources.php       # the plain CRUD/partial resource classes
+php tools/generate-docs.php            # the per-method reference pages under docs/
 composer cs-fix                        # apply code style
 composer check                         # php-cs-fixer + phpstan (level max) + phpunit
 ```

@@ -114,7 +114,11 @@ final readonly class Position extends AbstractModel
             $data['export_identifier'] = $this->exportIdentifier;
         }
         if ($this->exportIdentifierExtended !== null) {
-            $data['export_identifier_extended'] = $this->exportIdentifierExtended->toArray();
+            $nested = $this->exportIdentifierExtended->toArray();
+
+            if ($nested !== []) {
+                $data['export_identifier_extended'] = $nested;
+            }
         }
         if ($this->priceType !== null) {
             $data['price_type'] = $this->priceType->value;

@@ -54,7 +54,11 @@ final readonly class WebHook extends AbstractModel
             $data['is_active'] = $this->isActive;
         }
         if ($this->lastResponse !== null) {
-            $data['last_response'] = $this->lastResponse->toArray();
+            $nested = $this->lastResponse->toArray();
+
+            if ($nested !== []) {
+                $data['last_response'] = $nested;
+            }
         }
         if ($this->secret !== null) {
             $data['secret'] = $this->secret;

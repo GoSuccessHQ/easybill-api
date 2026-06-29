@@ -173,13 +173,21 @@ final readonly class Document extends AbstractModel
     {
         $data = [];
         if ($this->address !== null) {
-            $data['address'] = $this->address->toArray();
+            $nested = $this->address->toArray();
+
+            if ($nested !== []) {
+                $data['address'] = $nested;
+            }
         }
         if ($this->advancedDataFields !== []) {
             $data['advanced_data_fields'] = array_map(static fn(AdvancedDataField $item): array => $item->toArray(), $this->advancedDataFields);
         }
         if ($this->labelAddress !== null) {
-            $data['label_address'] = $this->labelAddress->toArray();
+            $nested = $this->labelAddress->toArray();
+
+            if ($nested !== []) {
+                $data['label_address'] = $nested;
+            }
         }
         if ($this->anonymizeDueDate !== null) {
             $data['anonymize_due_date'] = $this->anonymizeDueDate;
@@ -215,7 +223,11 @@ final readonly class Document extends AbstractModel
             $data['customer_id'] = $this->customerId;
         }
         if ($this->customerSnapshot !== null) {
-            $data['customer_snapshot'] = $this->customerSnapshot->toArray();
+            $nested = $this->customerSnapshot->toArray();
+
+            if ($nested !== []) {
+                $data['customer_snapshot'] = $nested;
+            }
         }
         if ($this->discount !== null) {
             $data['discount'] = $this->discount;
@@ -278,13 +290,21 @@ final readonly class Document extends AbstractModel
             $data['project_id'] = $this->projectId;
         }
         if ($this->recurringOptions !== null) {
-            $data['recurring_options'] = $this->recurringOptions->toArray();
+            $nested = $this->recurringOptions->toArray();
+
+            if ($nested !== []) {
+                $data['recurring_options'] = $nested;
+            }
         }
         if ($this->refId !== null) {
             $data['ref_id'] = $this->refId;
         }
         if ($this->serviceDate !== null) {
-            $data['service_date'] = $this->serviceDate->toArray();
+            $nested = $this->serviceDate->toArray();
+
+            if ($nested !== []) {
+                $data['service_date'] = $nested;
+            }
         }
         if ($this->shippingCountry !== null) {
             $data['shipping_country'] = $this->shippingCountry;

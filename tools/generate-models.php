@@ -543,11 +543,21 @@ function arrayFromExpr(string $access, array $item): string
 function toLine(string $jsonKey, string $phpName, array $type): string
 {
     $prop = "\$this->{$phpName}";
+
+    // Nested models: skip when the serialized object would be empty (e.g. read-only objects).
+    if ($type['kind'] === 'model') {
+        return "        if ({$prop} !== null) {\n"
+            . "            \$nested = {$prop}->toArray();\n\n"
+            . "            if (\$nested !== []) {\n"
+            . "                \$data['{$jsonKey}'] = \$nested;\n"
+            . "            }\n"
+            . '        }';
+    }
+
     $condition = $type['kind'] === 'array' ? "{$prop} !== []" : "{$prop} !== null";
 
     $value = match ($type['kind']) {
         'enum' => "{$prop}->value",
-        'model' => "{$prop}->toArray()",
         'array' => arrayToExpr($prop, $type['item']),
         default => $prop,
     };

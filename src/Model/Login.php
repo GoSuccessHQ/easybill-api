@@ -70,7 +70,11 @@ final readonly class Login extends AbstractModel
             $data['time_zone'] = $this->timeZone;
         }
         if ($this->security !== null) {
-            $data['security'] = $this->security->toArray();
+            $nested = $this->security->toArray();
+
+            if ($nested !== []) {
+                $data['security'] = $nested;
+            }
         }
 
         return $data;

@@ -35,3 +35,34 @@ jobs:
 
       - name: Tests (phpunit)
         run: vendor/bin/phpunit --testsuite unit
+
+  codegen:
+    name: Generated files are up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Regenerate models, filters, resources and docs
+        run: |
+          php tools/generate-models.php
+          php tools/generate-resources.php
+          php tools/generate-docs.php
+          vendor/bin/php-cs-fixer fix
+
+      - name: Fail if generated files are out of date
+        run: |
+          git add -A
+          if ! git diff --cached --exit-code; then
+            echo "::error::Generated files are out of date. Run the generators in tools/ and php-cs-fixer, then commit the result."
+            exit 1
+          fi

@@ -159,16 +159,26 @@ $client = new Client(
 
 ## Development
 
-The data models, enums and filter objects are generated from the official
-Swagger specification, and the plain resource classes from a declarative config:
+The data models, enums and filter objects are generated from a committed
+snapshot of the official Swagger specification ([resources/swagger.json](resources/swagger.json)),
+and the plain resource classes from a declarative config:
 
 ```bash
-php tools/generate-models.php          # enums, DTOs and typed filters from the live spec
+php tools/generate-models.php          # enums, DTOs and typed filters (from the snapshot)
 php tools/generate-resources.php       # the plain CRUD/partial resource classes
 php tools/generate-docs.php            # the per-method reference pages under docs/
 composer cs-fix                        # apply code style
 composer check                         # php-cs-fixer + phpstan (level max) + phpunit
 ```
+
+To refresh against the live API, regenerate the snapshot first:
+
+```bash
+php tools/generate-models.php https://api.easybill.de/rest/v1/swagger.json
+curl -s https://api.easybill.de/rest/v1/swagger.json -o resources/swagger.json
+```
+
+CI regenerates everything and fails if the committed output is out of date.
 
 > Running the test suite additionally requires the `dom`, `xml`, `xmlwriter`,
 > `mbstring` and `tokenizer` PHP extensions (PHPUnit dependencies).

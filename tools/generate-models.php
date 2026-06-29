@@ -11,20 +11,23 @@ declare(strict_types=1);
  * changes.
  *
  * Usage:
- *   php tools/generate-models.php [path-to-swagger.json]
+ *   php tools/generate-models.php [path-or-url]
  *
- * When no path is given, the spec is downloaded from the official URL.
+ * Without an argument it reads the committed snapshot (resources/swagger.json),
+ * so generation is deterministic and offline. To refresh from the live API:
+ *   php tools/generate-models.php https://api.easybill.de/rest/v1/swagger.json > resources/swagger.json
  */
 
 const SPEC_URL = 'https://api.easybill.de/rest/v1/swagger.json';
+const SPEC_SNAPSHOT = __DIR__ . '/../resources/swagger.json';
 const SRC = __DIR__ . '/../src';
 const NS = 'GoSuccess\\Easybill';
 
-$specPath = $argv[1] ?? null;
-$json = $specPath !== null ? file_get_contents($specPath) : file_get_contents(SPEC_URL);
+$specPath = $argv[1] ?? SPEC_SNAPSHOT;
+$json = file_get_contents($specPath);
 
 if ($json === false) {
-    fwrite(STDERR, "Failed to read the specification.\n");
+    fwrite(STDERR, "Failed to read the specification from {$specPath}.\n");
     exit(1);
 }
 

@@ -300,6 +300,8 @@ $protected = [
     SRC . '/Enum/AcquireOption.php',
     SRC . '/Enum/PaymentOption.php',
     SRC . '/Enum/CalcVatFrom.php',
+    SRC . '/Enum/DocumentSendType.php',
+    SRC . '/Enum/DocumentConvertTarget.php',
     SRC . '/Model/Model.php',
     SRC . '/Model/Listing.php',
     SRC . '/Model/AbstractModel.php',

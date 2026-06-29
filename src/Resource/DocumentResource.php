@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace GoSuccess\Easybill\Resource;
 
+use GoSuccess\Easybill\Enum\DocumentConvertTarget;
+use GoSuccess\Easybill\Enum\DocumentSendType;
 use GoSuccess\Easybill\Filter\DocumentFilter;
 use GoSuccess\Easybill\Http\Method;
 use GoSuccess\Easybill\Model\Document;
@@ -93,27 +95,22 @@ final class DocumentResource extends AbstractResource
     }
 
     /**
-     * Send a document.
-     *
-     * @param string $type One of `email`, `fax`, `post`.
+     * Send a document via the given channel.
      */
-    public function send(int $id, string $type, PostBoxRequest $request): void
+    public function send(int $id, DocumentSendType $type, PostBoxRequest $request): void
     {
-        $this->actionVoid(Method::Post, self::PATH . "/{$id}/send/{$type}", body: $request);
+        $this->actionVoid(Method::Post, self::PATH . "/{$id}/send/{$type->value}", body: $request);
     }
 
     /**
      * Convert a document into another type (e.g. an offer into an invoice).
-     *
-     * @param string $type One of `DUNNING`, `REMINDER`, `CHARGE_CONFIRM`, `CHARGE`, `CREDIT`,
-     *                     `DELIVERY`, `INVOICE`, `ORDER`.
      */
-    public function convert(int $id, string $type, ?string $pdfTemplate = null): Document
+    public function convert(int $id, DocumentConvertTarget $type, ?string $pdfTemplate = null): Document
     {
         return $this->action(
             Document::class,
             Method::Post,
-            self::PATH . "/{$id}/{$type}",
+            self::PATH . "/{$id}/{$type->value}",
             ['pdf_template' => $pdfTemplate],
         );
     }

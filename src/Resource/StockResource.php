@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GoSuccess\Easybill\Resource;
 
+use GoSuccess\Easybill\Filter\StockFilter;
 use GoSuccess\Easybill\Model\Stock;
 use GoSuccess\Easybill\Model\Stocks;
 use GoSuccess\Easybill\Pagination\Paginator;
@@ -18,24 +19,24 @@ final class StockResource extends AbstractResource
     /**
      * Fetch a single page of results.
      *
-     * @param array<string, scalar|null> $filters
+     * @param StockFilter|null $filter Typed query filters.
+     *
+     * @return Stocks
      */
-    public function list(int $page = 1, int $limit = 100, array $filters = []): Stocks
+    public function list(int $page = 1, int $limit = 100, ?StockFilter $filter = null): Stocks
     {
-        return $this->getListing(Stocks::class, self::PATH, ['page' => $page, 'limit' => $limit, ...$filters]);
+        return $this->getListing(Stocks::class, self::PATH, ['page' => $page, 'limit' => $limit, ...($filter?->toQuery() ?? [])]);
     }
 
     /**
      * Iterate lazily over every item across all pages.
      *
-     * @param array<string, scalar|null> $filters
-     *
      * @return Paginator<Stock>
      */
-    public function all(array $filters = [], int $limit = 100): Paginator
+    public function all(?StockFilter $filter = null, int $limit = 100): Paginator
     {
         /** @var Paginator<Stock> $paginator */
-        $paginator = new Paginator(fn(int $page): Stocks => $this->list($page, $limit, $filters));
+        $paginator = new Paginator(fn(int $page): Stocks => $this->list($page, $limit, $filter));
 
         return $paginator;
     }

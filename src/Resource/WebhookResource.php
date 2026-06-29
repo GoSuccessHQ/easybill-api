@@ -18,24 +18,22 @@ final class WebhookResource extends AbstractResource
     /**
      * Fetch a single page of results.
      *
-     * @param array<string, scalar|null> $filters
+     * @return WebHooks
      */
-    public function list(int $page = 1, int $limit = 100, array $filters = []): WebHooks
+    public function list(int $page = 1, int $limit = 100): WebHooks
     {
-        return $this->getListing(WebHooks::class, self::PATH, ['page' => $page, 'limit' => $limit, ...$filters]);
+        return $this->getListing(WebHooks::class, self::PATH, ['page' => $page, 'limit' => $limit]);
     }
 
     /**
      * Iterate lazily over every item across all pages.
      *
-     * @param array<string, scalar|null> $filters
-     *
      * @return Paginator<WebHook>
      */
-    public function all(array $filters = [], int $limit = 100): Paginator
+    public function all(int $limit = 100): Paginator
     {
         /** @var Paginator<WebHook> $paginator */
-        $paginator = new Paginator(fn(int $page): WebHooks => $this->list($page, $limit, $filters));
+        $paginator = new Paginator(fn(int $page): WebHooks => $this->list($page, $limit));
 
         return $paginator;
     }

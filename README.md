@@ -64,16 +64,26 @@ $created = $client->customers->create(new Customer(
 ## Pagination
 
 Each list endpoint offers `list()` for a single page and `all()` for a lazy
-iterator over every page (each page request is rate-limited automatically):
+iterator over every page (each page request is rate-limited automatically).
+Filters are **strongly typed** per endpoint:
 
 ```php
+use GoSuccess\Easybill\Filter\CustomerFilter;
+use GoSuccess\Easybill\Filter\DocumentFilter;
+use GoSuccess\Easybill\Enum\DocumentType;
+
 // One page
-$page = $client->customers->list(page: 1, limit: 100, filters: ['country' => 'DE']);
+$page = $client->customers->list(page: 1, limit: 100, filter: new CustomerFilter(country: 'DE'));
 echo $page->total, ' customers in total';
 
 // All customers, transparently across pages
-foreach ($client->customers->all(filters: ['country' => 'DE']) as $customer) {
+foreach ($client->customers->all(new CustomerFilter(country: 'DE')) as $customer) {
     echo $customer->companyName, PHP_EOL;
+}
+
+// Enum-typed filters, e.g. only draft invoices
+foreach ($client->documents->all(new DocumentFilter(type: DocumentType::Invoice, isDraft: true)) as $document) {
+    // ...
 }
 ```
 
@@ -145,10 +155,12 @@ $client = new Client(
 
 ## Development
 
-The data models and enums are generated from the official Swagger specification:
+The data models, enums and filter objects are generated from the official
+Swagger specification, and the plain resource classes from a declarative config:
 
 ```bash
-php tools/generate-models.php          # regenerate from the live spec
+php tools/generate-models.php          # enums, DTOs and typed filters from the live spec
+php tools/generate-resources.php       # the plain CRUD/partial resource classes
 composer cs-fix                        # apply code style
 composer check                         # php-cs-fixer + phpstan (level max) + phpunit
 ```

@@ -18,24 +18,22 @@ final class PositionGroupResource extends AbstractResource
     /**
      * Fetch a single page of results.
      *
-     * @param array<string, scalar|null> $filters
+     * @return PositionGroups
      */
-    public function list(int $page = 1, int $limit = 100, array $filters = []): PositionGroups
+    public function list(int $page = 1, int $limit = 100): PositionGroups
     {
-        return $this->getListing(PositionGroups::class, self::PATH, ['page' => $page, 'limit' => $limit, ...$filters]);
+        return $this->getListing(PositionGroups::class, self::PATH, ['page' => $page, 'limit' => $limit]);
     }
 
     /**
      * Iterate lazily over every item across all pages.
      *
-     * @param array<string, scalar|null> $filters
-     *
      * @return Paginator<PositionGroup>
      */
-    public function all(array $filters = [], int $limit = 100): Paginator
+    public function all(int $limit = 100): Paginator
     {
         /** @var Paginator<PositionGroup> $paginator */
-        $paginator = new Paginator(fn(int $page): PositionGroups => $this->list($page, $limit, $filters));
+        $paginator = new Paginator(fn(int $page): PositionGroups => $this->list($page, $limit));
 
         return $paginator;
     }

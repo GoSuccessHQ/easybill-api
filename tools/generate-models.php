@@ -334,10 +334,18 @@ foreach ($enumsToGenerate as $className => $enum) {
     $generatedEnums[] = $className;
 }
 
+// Typed filter objects for the list endpoints (enum names are now fully resolved).
+$generatedFilters = generateFilters();
+
 sort($generatedEnums);
 sort($generatedModels);
 
-printf("Generated %d enums and %d models.\n", count($generatedEnums), count($generatedModels));
+printf(
+    "Generated %d enums, %d models and %d filters.\n",
+    count($generatedEnums),
+    count($generatedModels),
+    $generatedFilters,
+);
 
 // --- Code emitters ---------------------------------------------------------
 
@@ -574,5 +582,181 @@ function arrayToExpr(string $prop, array $item): string
         'model' => "array_map(static fn ({$item['php']} \$item): array => \$item->toArray(), {$prop})",
         'enum' => "array_map(static fn ({$item['php']} \$item) => \$item->value, {$prop})",
         default => $prop,
+    };
+}
+
+// --- Filter generation -----------------------------------------------------
+
+/**
+ * Generate typed filter DTOs for every list endpoint that accepts query filters.
+ *
+ * @return int Number of generated filter classes.
+ */
+function generateFilters(): int
+{
+    global $spec;
+
+    $map = [
+        '/customers' => 'CustomerFilter',
+        '/documents' => 'DocumentFilter',
+        '/positions' => 'PositionFilter',
+        '/projects' => 'ProjectFilter',
+        '/time-trackings' => 'TimeTrackingFilter',
+        '/document-payments' => 'DocumentPaymentFilter',
+        '/post-boxes' => 'PostBoxFilter',
+        '/sepa-payments' => 'SepaPaymentFilter',
+        '/serial-numbers' => 'SerialNumberFilter',
+        '/stocks' => 'StockFilter',
+        '/discounts/position' => 'DiscountPositionFilter',
+        '/discounts/position-group' => 'DiscountPositionGroupFilter',
+        '/pdf-templates' => 'PdfTemplateFilter',
+    ];
+
+    $dir = SRC . '/Filter';
+    @mkdir($dir, 0o775, true);
+
+    foreach (glob("{$dir}/*.php") ?: [] as $file) {
+        unlink($file);
+    }
+
+    $count = 0;
+
+    foreach ($map as $path => $className) {
+        $params = [];
+
+        foreach ($spec['paths'][$path]['get']['parameters'] ?? [] as $param) {
+            if (isset($param['$ref']) || ($param['in'] ?? null) !== 'query') {
+                continue;
+            }
+
+            $params[] = $param;
+        }
+
+        if ($params === []) {
+            continue;
+        }
+
+        file_put_contents("{$dir}/{$className}.php", generateFilter($className, $params));
+        ++$count;
+    }
+
+    return $count;
+}
+
+/**
+ * @param list<array<string, mixed>> $params
+ */
+function generateFilter(string $className, array $params): string
+{
+    $imports = [];
+    $ctorParams = [];
+    $queryLines = [];
+
+    foreach ($params as $param) {
+        $jsonKey = (string) $param['name'];
+        $phpName = camel($jsonKey);
+        $kind = filterKind($param);
+
+        if ($kind['kind'] === 'enum') {
+            $imports[$kind['php']] = true;
+        }
+
+        if ($kind['kind'] === 'csv') {
+            $ctorParams[] = "        /** @var list<string>|null */\n        public ?array \${$phpName} = null,";
+        } else {
+            $ctorParams[] = "        public ?{$kind['php']} \${$phpName} = null,";
+        }
+
+        $value = match ($kind['kind']) {
+            'enum' => "\$this->{$phpName}->value",
+            'bool01' => "\$this->{$phpName} ? '1' : '0'",
+            'csv' => "implode(',', \$this->{$phpName})",
+            default => "\$this->{$phpName}",
+        };
+
+        $queryLines[] = "        if (\$this->{$phpName} !== null) {\n            \$query['{$jsonKey}'] = {$value};\n        }";
+    }
+
+    $useStatements = '';
+    $importNames = array_keys($imports);
+    sort($importNames);
+
+    foreach ($importNames as $import) {
+        $useStatements .= 'use ' . NS . "\\Enum\\{$import};\n";
+    }
+
+    $ctor = implode("\n", $ctorParams);
+    $query = implode("\n", $queryLines);
+
+    return <<<PHP
+        <?php
+
+        declare(strict_types=1);
+
+        namespace GoSuccess\\Easybill\\Filter;
+
+        {$useStatements}/**
+         * Typed query filters for the corresponding list endpoint.
+         */
+        final readonly class {$className}
+        {
+            public function __construct(
+        {$ctor}
+            ) {}
+
+            /**
+             * @return array<string, scalar|null>
+             */
+            public function toQuery(): array
+            {
+                \$query = [];
+        {$query}
+
+                return \$query;
+            }
+        }
+
+        PHP;
+}
+
+/**
+ * @param array<string, mixed> $param
+ *
+ * @return array{php: string, kind: string}
+ */
+function filterKind(array $param): array
+{
+    global $enumNames;
+
+    $type = $param['type'] ?? 'string';
+
+    if ($type === 'array') {
+        return ['php' => 'array', 'kind' => 'csv'];
+    }
+
+    if (isset($param['enum']) && is_array($param['enum'])) {
+        /** @var list<int|string> $enum */
+        $enum = $param['enum'];
+        $sorted = $enum;
+        sort($sorted);
+
+        if ($sorted === ['0', '1']) {
+            return ['php' => 'bool', 'kind' => 'bool01'];
+        }
+
+        $key = valuesetKey('string', $enum);
+
+        if (isset($enumNames[$key])) {
+            return ['php' => $enumNames[$key], 'kind' => 'enum'];
+        }
+
+        return ['php' => 'string', 'kind' => 'scalar'];
+    }
+
+    return match ($type) {
+        'integer' => ['php' => 'int', 'kind' => 'scalar'],
+        'number' => ['php' => 'float', 'kind' => 'scalar'],
+        'boolean' => ['php' => 'bool', 'kind' => 'scalar'],
+        default => ['php' => 'string', 'kind' => 'scalar'],
     };
 }

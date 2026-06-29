@@ -16,28 +16,25 @@ final class ContactResource extends AbstractResource
     /**
      * Fetch a single page of a customer's contacts.
      *
-     * @param array<string, scalar|null> $filters
      */
-    public function list(int $customerId, int $page = 1, int $limit = 100, array $filters = []): Contacts
+    public function list(int $customerId, int $page = 1, int $limit = 100): Contacts
     {
         return $this->getListing(
             Contacts::class,
             "customers/{$customerId}/contacts",
-            ['page' => $page, 'limit' => $limit, ...$filters],
+            ['page' => $page, 'limit' => $limit],
         );
     }
 
     /**
      * Iterate lazily over every contact of a customer across all pages.
      *
-     * @param array<string, scalar|null> $filters
-     *
      * @return Paginator<Contact>
      */
-    public function all(int $customerId, array $filters = [], int $limit = 100): Paginator
+    public function all(int $customerId, int $limit = 100): Paginator
     {
         /** @var Paginator<Contact> $paginator */
-        $paginator = new Paginator(fn(int $page): Contacts => $this->list($customerId, $page, $limit, $filters));
+        $paginator = new Paginator(fn(int $page): Contacts => $this->list($customerId, $page, $limit));
 
         return $paginator;
     }

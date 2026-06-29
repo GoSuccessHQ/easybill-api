@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GoSuccess\Easybill\Resource;
 
+use GoSuccess\Easybill\Filter\DocumentFilter;
 use GoSuccess\Easybill\Http\Method;
 use GoSuccess\Easybill\Model\Document;
 use GoSuccess\Easybill\Model\Documents;
@@ -23,25 +24,24 @@ final class DocumentResource extends AbstractResource
     /**
      * Fetch a single page of documents.
      *
-     * @param array<string, scalar|null> $filters Optional filters such as `type`, `status`,
-     *                                            `customer_id`, `number`, `document_date`, etc.
+     * @param DocumentFilter|null $filter Typed query filters.
+     *
+     * @return Documents
      */
-    public function list(int $page = 1, int $limit = 100, array $filters = []): Documents
+    public function list(int $page = 1, int $limit = 100, ?DocumentFilter $filter = null): Documents
     {
-        return $this->getListing(Documents::class, self::PATH, ['page' => $page, 'limit' => $limit, ...$filters]);
+        return $this->getListing(Documents::class, self::PATH, ['page' => $page, 'limit' => $limit, ...($filter?->toQuery() ?? [])]);
     }
 
     /**
      * Iterate lazily over every document across all pages.
      *
-     * @param array<string, scalar|null> $filters
-     *
      * @return Paginator<Document>
      */
-    public function all(array $filters = [], int $limit = 100): Paginator
+    public function all(?DocumentFilter $filter = null, int $limit = 100): Paginator
     {
         /** @var Paginator<Document> $paginator */
-        $paginator = new Paginator(fn(int $page): Documents => $this->list($page, $limit, $filters));
+        $paginator = new Paginator(fn(int $page): Documents => $this->list($page, $limit, $filter));
 
         return $paginator;
     }

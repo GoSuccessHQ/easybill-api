@@ -18,24 +18,22 @@ final class TaskResource extends AbstractResource
     /**
      * Fetch a single page of results.
      *
-     * @param array<string, scalar|null> $filters
+     * @return Tasks
      */
-    public function list(int $page = 1, int $limit = 100, array $filters = []): Tasks
+    public function list(int $page = 1, int $limit = 100): Tasks
     {
-        return $this->getListing(Tasks::class, self::PATH, ['page' => $page, 'limit' => $limit, ...$filters]);
+        return $this->getListing(Tasks::class, self::PATH, ['page' => $page, 'limit' => $limit]);
     }
 
     /**
      * Iterate lazily over every item across all pages.
      *
-     * @param array<string, scalar|null> $filters
-     *
      * @return Paginator<Task>
      */
-    public function all(array $filters = [], int $limit = 100): Paginator
+    public function all(int $limit = 100): Paginator
     {
         /** @var Paginator<Task> $paginator */
-        $paginator = new Paginator(fn(int $page): Tasks => $this->list($page, $limit, $filters));
+        $paginator = new Paginator(fn(int $page): Tasks => $this->list($page, $limit));
 
         return $paginator;
     }

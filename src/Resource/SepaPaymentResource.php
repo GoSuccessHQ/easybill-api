@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GoSuccess\Easybill\Resource;
 
+use GoSuccess\Easybill\Filter\SepaPaymentFilter;
 use GoSuccess\Easybill\Model\SEPAPayment;
 use GoSuccess\Easybill\Model\SEPAPayments;
 use GoSuccess\Easybill\Pagination\Paginator;
@@ -18,24 +19,24 @@ final class SepaPaymentResource extends AbstractResource
     /**
      * Fetch a single page of results.
      *
-     * @param array<string, scalar|null> $filters
+     * @param SepaPaymentFilter|null $filter Typed query filters.
+     *
+     * @return SEPAPayments
      */
-    public function list(int $page = 1, int $limit = 100, array $filters = []): SEPAPayments
+    public function list(int $page = 1, int $limit = 100, ?SepaPaymentFilter $filter = null): SEPAPayments
     {
-        return $this->getListing(SEPAPayments::class, self::PATH, ['page' => $page, 'limit' => $limit, ...$filters]);
+        return $this->getListing(SEPAPayments::class, self::PATH, ['page' => $page, 'limit' => $limit, ...($filter?->toQuery() ?? [])]);
     }
 
     /**
      * Iterate lazily over every item across all pages.
      *
-     * @param array<string, scalar|null> $filters
-     *
      * @return Paginator<SEPAPayment>
      */
-    public function all(array $filters = [], int $limit = 100): Paginator
+    public function all(?SepaPaymentFilter $filter = null, int $limit = 100): Paginator
     {
         /** @var Paginator<SEPAPayment> $paginator */
-        $paginator = new Paginator(fn(int $page): SEPAPayments => $this->list($page, $limit, $filters));
+        $paginator = new Paginator(fn(int $page): SEPAPayments => $this->list($page, $limit, $filter));
 
         return $paginator;
     }

@@ -16,22 +16,24 @@ final class AttachmentResource extends AbstractResource
     private const string PATH = 'attachments';
 
     /**
-     * @param array<string, scalar|null> $filters
+     * Fetch a single page of results.
+     *
+     * @return Attachments
      */
-    public function list(int $page = 1, int $limit = 100, array $filters = []): Attachments
+    public function list(int $page = 1, int $limit = 100): Attachments
     {
-        return $this->getListing(Attachments::class, self::PATH, ['page' => $page, 'limit' => $limit, ...$filters]);
+        return $this->getListing(Attachments::class, self::PATH, ['page' => $page, 'limit' => $limit]);
     }
 
     /**
-     * @param array<string, scalar|null> $filters
+     * Iterate lazily over every item across all pages.
      *
      * @return Paginator<Attachment>
      */
-    public function all(array $filters = [], int $limit = 100): Paginator
+    public function all(int $limit = 100): Paginator
     {
         /** @var Paginator<Attachment> $paginator */
-        $paginator = new Paginator(fn(int $page): Attachments => $this->list($page, $limit, $filters));
+        $paginator = new Paginator(fn(int $page): Attachments => $this->list($page, $limit));
 
         return $paginator;
     }

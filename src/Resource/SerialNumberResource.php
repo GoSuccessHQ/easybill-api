@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GoSuccess\Easybill\Resource;
 
+use GoSuccess\Easybill\Filter\SerialNumberFilter;
 use GoSuccess\Easybill\Model\SerialNumber;
 use GoSuccess\Easybill\Model\SerialNumbers;
 use GoSuccess\Easybill\Pagination\Paginator;
@@ -18,24 +19,24 @@ final class SerialNumberResource extends AbstractResource
     /**
      * Fetch a single page of results.
      *
-     * @param array<string, scalar|null> $filters
+     * @param SerialNumberFilter|null $filter Typed query filters.
+     *
+     * @return SerialNumbers
      */
-    public function list(int $page = 1, int $limit = 100, array $filters = []): SerialNumbers
+    public function list(int $page = 1, int $limit = 100, ?SerialNumberFilter $filter = null): SerialNumbers
     {
-        return $this->getListing(SerialNumbers::class, self::PATH, ['page' => $page, 'limit' => $limit, ...$filters]);
+        return $this->getListing(SerialNumbers::class, self::PATH, ['page' => $page, 'limit' => $limit, ...($filter?->toQuery() ?? [])]);
     }
 
     /**
      * Iterate lazily over every item across all pages.
      *
-     * @param array<string, scalar|null> $filters
-     *
      * @return Paginator<SerialNumber>
      */
-    public function all(array $filters = [], int $limit = 100): Paginator
+    public function all(?SerialNumberFilter $filter = null, int $limit = 100): Paginator
     {
         /** @var Paginator<SerialNumber> $paginator */
-        $paginator = new Paginator(fn(int $page): SerialNumbers => $this->list($page, $limit, $filters));
+        $paginator = new Paginator(fn(int $page): SerialNumbers => $this->list($page, $limit, $filter));
 
         return $paginator;
     }

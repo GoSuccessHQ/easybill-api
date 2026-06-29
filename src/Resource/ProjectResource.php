@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GoSuccess\Easybill\Resource;
 
+use GoSuccess\Easybill\Filter\ProjectFilter;
 use GoSuccess\Easybill\Model\Project;
 use GoSuccess\Easybill\Model\Projects;
 use GoSuccess\Easybill\Pagination\Paginator;
@@ -18,24 +19,24 @@ final class ProjectResource extends AbstractResource
     /**
      * Fetch a single page of results.
      *
-     * @param array<string, scalar|null> $filters
+     * @param ProjectFilter|null $filter Typed query filters.
+     *
+     * @return Projects
      */
-    public function list(int $page = 1, int $limit = 100, array $filters = []): Projects
+    public function list(int $page = 1, int $limit = 100, ?ProjectFilter $filter = null): Projects
     {
-        return $this->getListing(Projects::class, self::PATH, ['page' => $page, 'limit' => $limit, ...$filters]);
+        return $this->getListing(Projects::class, self::PATH, ['page' => $page, 'limit' => $limit, ...($filter?->toQuery() ?? [])]);
     }
 
     /**
      * Iterate lazily over every item across all pages.
      *
-     * @param array<string, scalar|null> $filters
-     *
      * @return Paginator<Project>
      */
-    public function all(array $filters = [], int $limit = 100): Paginator
+    public function all(?ProjectFilter $filter = null, int $limit = 100): Paginator
     {
         /** @var Paginator<Project> $paginator */
-        $paginator = new Paginator(fn(int $page): Projects => $this->list($page, $limit, $filters));
+        $paginator = new Paginator(fn(int $page): Projects => $this->list($page, $limit, $filter));
 
         return $paginator;
     }

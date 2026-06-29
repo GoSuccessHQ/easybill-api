@@ -18,24 +18,22 @@ final class TextTemplateResource extends AbstractResource
     /**
      * Fetch a single page of results.
      *
-     * @param array<string, scalar|null> $filters
+     * @return TextTemplates
      */
-    public function list(int $page = 1, int $limit = 100, array $filters = []): TextTemplates
+    public function list(int $page = 1, int $limit = 100): TextTemplates
     {
-        return $this->getListing(TextTemplates::class, self::PATH, ['page' => $page, 'limit' => $limit, ...$filters]);
+        return $this->getListing(TextTemplates::class, self::PATH, ['page' => $page, 'limit' => $limit]);
     }
 
     /**
      * Iterate lazily over every item across all pages.
      *
-     * @param array<string, scalar|null> $filters
-     *
      * @return Paginator<TextTemplate>
      */
-    public function all(array $filters = [], int $limit = 100): Paginator
+    public function all(int $limit = 100): Paginator
     {
         /** @var Paginator<TextTemplate> $paginator */
-        $paginator = new Paginator(fn(int $page): TextTemplates => $this->list($page, $limit, $filters));
+        $paginator = new Paginator(fn(int $page): TextTemplates => $this->list($page, $limit));
 
         return $paginator;
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GoSuccess\Easybill\Resource;
 
+use GoSuccess\Easybill\Filter\DiscountPositionGroupFilter;
 use GoSuccess\Easybill\Model\DiscountPositionGroup;
 use GoSuccess\Easybill\Model\DiscountPositionGroups;
 use GoSuccess\Easybill\Pagination\Paginator;
@@ -18,24 +19,24 @@ final class DiscountPositionGroupResource extends AbstractResource
     /**
      * Fetch a single page of results.
      *
-     * @param array<string, scalar|null> $filters
+     * @param DiscountPositionGroupFilter|null $filter Typed query filters.
+     *
+     * @return DiscountPositionGroups
      */
-    public function list(int $page = 1, int $limit = 100, array $filters = []): DiscountPositionGroups
+    public function list(int $page = 1, int $limit = 100, ?DiscountPositionGroupFilter $filter = null): DiscountPositionGroups
     {
-        return $this->getListing(DiscountPositionGroups::class, self::PATH, ['page' => $page, 'limit' => $limit, ...$filters]);
+        return $this->getListing(DiscountPositionGroups::class, self::PATH, ['page' => $page, 'limit' => $limit, ...($filter?->toQuery() ?? [])]);
     }
 
     /**
      * Iterate lazily over every item across all pages.
      *
-     * @param array<string, scalar|null> $filters
-     *
      * @return Paginator<DiscountPositionGroup>
      */
-    public function all(array $filters = [], int $limit = 100): Paginator
+    public function all(?DiscountPositionGroupFilter $filter = null, int $limit = 100): Paginator
     {
         /** @var Paginator<DiscountPositionGroup> $paginator */
-        $paginator = new Paginator(fn(int $page): DiscountPositionGroups => $this->list($page, $limit, $filters));
+        $paginator = new Paginator(fn(int $page): DiscountPositionGroups => $this->list($page, $limit, $filter));
 
         return $paginator;
     }

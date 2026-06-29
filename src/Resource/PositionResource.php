@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GoSuccess\Easybill\Resource;
 
+use GoSuccess\Easybill\Filter\PositionFilter;
 use GoSuccess\Easybill\Model\Position;
 use GoSuccess\Easybill\Model\Positions;
 use GoSuccess\Easybill\Pagination\Paginator;
@@ -18,24 +19,24 @@ final class PositionResource extends AbstractResource
     /**
      * Fetch a single page of results.
      *
-     * @param array<string, scalar|null> $filters
+     * @param PositionFilter|null $filter Typed query filters.
+     *
+     * @return Positions
      */
-    public function list(int $page = 1, int $limit = 100, array $filters = []): Positions
+    public function list(int $page = 1, int $limit = 100, ?PositionFilter $filter = null): Positions
     {
-        return $this->getListing(Positions::class, self::PATH, ['page' => $page, 'limit' => $limit, ...$filters]);
+        return $this->getListing(Positions::class, self::PATH, ['page' => $page, 'limit' => $limit, ...($filter?->toQuery() ?? [])]);
     }
 
     /**
      * Iterate lazily over every item across all pages.
      *
-     * @param array<string, scalar|null> $filters
-     *
      * @return Paginator<Position>
      */
-    public function all(array $filters = [], int $limit = 100): Paginator
+    public function all(?PositionFilter $filter = null, int $limit = 100): Paginator
     {
         /** @var Paginator<Position> $paginator */
-        $paginator = new Paginator(fn(int $page): Positions => $this->list($page, $limit, $filters));
+        $paginator = new Paginator(fn(int $page): Positions => $this->list($page, $limit, $filter));
 
         return $paginator;
     }

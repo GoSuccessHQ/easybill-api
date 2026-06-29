@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GoSuccess\Easybill\Resource;
 
+use GoSuccess\Easybill\Filter\PdfTemplateFilter;
 use GoSuccess\Easybill\Model\PDFTemplate;
 use GoSuccess\Easybill\Model\PDFTemplates;
 
@@ -19,9 +20,9 @@ final class PdfTemplateResource extends AbstractResource
     /**
      * Fetch the full set of available PDF templates.
      */
-    public function list(): PDFTemplates
+    public function list(?PdfTemplateFilter $filter = null): PDFTemplates
     {
-        return $this->getModel(PDFTemplates::class, self::PATH);
+        return $this->getModel(PDFTemplates::class, self::PATH, $filter?->toQuery() ?? []);
     }
 
     /**
@@ -29,8 +30,8 @@ final class PdfTemplateResource extends AbstractResource
      *
      * @return list<PDFTemplate>
      */
-    public function all(): array
+    public function all(?PdfTemplateFilter $filter = null): array
     {
-        return $this->list()->items;
+        return $this->list($filter)->items;
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GoSuccess\Easybill\Resource;
 
+use GoSuccess\Easybill\Filter\TimeTrackingFilter;
 use GoSuccess\Easybill\Model\TimeTracking;
 use GoSuccess\Easybill\Model\TimeTrackings;
 use GoSuccess\Easybill\Pagination\Paginator;
@@ -18,24 +19,24 @@ final class TimeTrackingResource extends AbstractResource
     /**
      * Fetch a single page of results.
      *
-     * @param array<string, scalar|null> $filters
+     * @param TimeTrackingFilter|null $filter Typed query filters.
+     *
+     * @return TimeTrackings
      */
-    public function list(int $page = 1, int $limit = 100, array $filters = []): TimeTrackings
+    public function list(int $page = 1, int $limit = 100, ?TimeTrackingFilter $filter = null): TimeTrackings
     {
-        return $this->getListing(TimeTrackings::class, self::PATH, ['page' => $page, 'limit' => $limit, ...$filters]);
+        return $this->getListing(TimeTrackings::class, self::PATH, ['page' => $page, 'limit' => $limit, ...($filter?->toQuery() ?? [])]);
     }
 
     /**
      * Iterate lazily over every item across all pages.
      *
-     * @param array<string, scalar|null> $filters
-     *
      * @return Paginator<TimeTracking>
      */
-    public function all(array $filters = [], int $limit = 100): Paginator
+    public function all(?TimeTrackingFilter $filter = null, int $limit = 100): Paginator
     {
         /** @var Paginator<TimeTracking> $paginator */
-        $paginator = new Paginator(fn(int $page): TimeTrackings => $this->list($page, $limit, $filters));
+        $paginator = new Paginator(fn(int $page): TimeTrackings => $this->list($page, $limit, $filter));
 
         return $paginator;
     }

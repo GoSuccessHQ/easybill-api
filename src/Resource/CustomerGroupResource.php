@@ -18,24 +18,22 @@ final class CustomerGroupResource extends AbstractResource
     /**
      * Fetch a single page of results.
      *
-     * @param array<string, scalar|null> $filters
+     * @return CustomerGroups
      */
-    public function list(int $page = 1, int $limit = 100, array $filters = []): CustomerGroups
+    public function list(int $page = 1, int $limit = 100): CustomerGroups
     {
-        return $this->getListing(CustomerGroups::class, self::PATH, ['page' => $page, 'limit' => $limit, ...$filters]);
+        return $this->getListing(CustomerGroups::class, self::PATH, ['page' => $page, 'limit' => $limit]);
     }
 
     /**
      * Iterate lazily over every item across all pages.
      *
-     * @param array<string, scalar|null> $filters
-     *
      * @return Paginator<CustomerGroup>
      */
-    public function all(array $filters = [], int $limit = 100): Paginator
+    public function all(int $limit = 100): Paginator
     {
         /** @var Paginator<CustomerGroup> $paginator */
-        $paginator = new Paginator(fn(int $page): CustomerGroups => $this->list($page, $limit, $filters));
+        $paginator = new Paginator(fn(int $page): CustomerGroups => $this->list($page, $limit));
 
         return $paginator;
     }

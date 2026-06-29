@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GoSuccess\Easybill\Resource;
 
+use GoSuccess\Easybill\Filter\CustomerFilter;
 use GoSuccess\Easybill\Http\Method;
 use GoSuccess\Easybill\Model\Customer;
 use GoSuccess\Easybill\Model\Customers;
@@ -17,28 +18,26 @@ final class CustomerResource extends AbstractResource
     private const string PATH = 'customers';
 
     /**
-     * Fetch a single page of customers.
+     * Fetch a single page of results.
      *
-     * @param array<string, scalar|null> $filters Optional filters such as `group_id`, `number`,
-     *                                            `country`, `zip_code`, `emails`, `first_name`,
-     *                                            `last_name`, `company_name`, `created_at`.
+     * @param CustomerFilter|null $filter Typed query filters.
+     *
+     * @return Customers
      */
-    public function list(int $page = 1, int $limit = 100, array $filters = []): Customers
+    public function list(int $page = 1, int $limit = 100, ?CustomerFilter $filter = null): Customers
     {
-        return $this->getListing(Customers::class, self::PATH, ['page' => $page, 'limit' => $limit, ...$filters]);
+        return $this->getListing(Customers::class, self::PATH, ['page' => $page, 'limit' => $limit, ...($filter?->toQuery() ?? [])]);
     }
 
     /**
-     * Iterate lazily over every customer across all pages.
-     *
-     * @param array<string, scalar|null> $filters
+     * Iterate lazily over every item across all pages.
      *
      * @return Paginator<Customer>
      */
-    public function all(array $filters = [], int $limit = 100): Paginator
+    public function all(?CustomerFilter $filter = null, int $limit = 100): Paginator
     {
         /** @var Paginator<Customer> $paginator */
-        $paginator = new Paginator(fn(int $page): Customers => $this->list($page, $limit, $filters));
+        $paginator = new Paginator(fn(int $page): Customers => $this->list($page, $limit, $filter));
 
         return $paginator;
     }

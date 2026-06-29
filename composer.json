@@ -3,36 +3,39 @@
     "description": "A modern, strongly-typed PHP client for the easybill REST API with built-in rate limiting.",
     "type": "library",
     "license": "MIT",
-    "keywords": ["easybill", "api", "client", "rest", "invoicing", "psr-18"],
+    "keywords": [
+        "easybill",
+        "api",
+        "client",
+        "rest",
+        "invoicing",
+        "psr-18"
+    ],
     "homepage": "https://github.com/gosuccess/easybill-api",
     "authors": [
         {
-            "name": "Paul Gossen",
+            "name": "GoSuccess GmbH",
             "email": "paul@gosuccess.io"
         }
     ],
     "require": {
         "php": "^8.4",
-        "psr/http-client": "^1.0",
-        "psr/http-factory": "^1.0",
-        "psr/http-message": "^1.1 || ^2.0",
-        "php-http/discovery": "^1.19"
+        "ext-curl": "*",
+        "ext-json": "*"
     },
     "require-dev": {
         "phpunit/phpunit": "^11.5",
         "phpstan/phpstan": "^2.1",
-        "friendsofphp/php-cs-fixer": "^3.68",
-        "php-http/mock-client": "^1.6",
-        "nyholm/psr7": "^1.8"
+        "friendsofphp/php-cs-fixer": "^3.68"
     },
     "autoload": {
         "psr-4": {
-            "Gosuccess\\Easybill\\": "src/"
+            "GoSuccess\\Easybill\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Gosuccess\\Easybill\\Tests\\": "tests/"
+            "GoSuccess\\Easybill\\Tests\\": "tests/"
         }
     },
     "scripts": {
@@ -47,10 +50,7 @@
         ]
     },
     "config": {
-        "sort-packages": true,
-        "allow-plugins": {
-            "php-http/discovery": true
-        }
+        "sort-packages": true
     },
     "minimum-stability": "stable",
     "prefer-stable": true

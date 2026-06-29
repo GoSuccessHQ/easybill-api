@@ -14,8 +14,20 @@ return (new PhpCsFixer\Config())
         'declare_strict_types' => true,
         'global_namespace_import' => [
             'import_classes' => true,
-            'import_constants' => true,
-            'import_functions' => true,
+            'import_constants' => false,
+            'import_functions' => false,
+        ],
+        // Call compiler-optimized special functions/constants from the global
+        // namespace (leading backslash) for better opcache optimization.
+        'native_function_invocation' => [
+            'include' => ['@compiler_optimized'],
+            'scope' => 'namespaced',
+            'strict' => true,
+        ],
+        'native_constant_invocation' => [
+            'include' => ['@compiler_optimized'],
+            'scope' => 'namespaced',
+            'strict' => true,
         ],
         'ordered_imports' => ['sort_algorithm' => 'alpha'],
         'no_unused_imports' => true,

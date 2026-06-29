@@ -40,8 +40,8 @@ composer require guzzlehttp/guzzle
 ## Quick start
 
 ```php
-use Gosuccess\Easybill\Client;
-use Gosuccess\Easybill\ClientConfig;
+use GoSuccess\Easybill\Client;
+use GoSuccess\Easybill\ClientConfig;
 
 $client = new Client(new ClientConfig(
     token: 'your-api-key',

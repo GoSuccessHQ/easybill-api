@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GoSuccess\Easybill\Tests\Unit\Http;
 
 use GoSuccess\Easybill\ClientConfig;
+use GoSuccess\Easybill\Exception\ApiException;
 use GoSuccess\Easybill\Exception\NotFoundException;
 use GoSuccess\Easybill\Exception\TransportException;
 use GoSuccess\Easybill\Http\Connection;
@@ -49,6 +50,49 @@ final class ConnectionTest extends TestCase
         $connection->requestJson(Method::Get, 'customers');
 
         self::assertSame([5.0], $clock->sleeps);
+    }
+
+    public function testDoesNotRetryNonIdempotentPostOnServerError(): void
+    {
+        $http = new MockHttpClient(new Response(500, '{}'));
+        $connection = new Connection($this->config(), $http, new SpyRateLimiter(), new FakeClock());
+
+        try {
+            $connection->requestJson(Method::Post, 'customers', body: ['company_name' => 'ACME']);
+            self::fail('Expected an ApiException.');
+        } catch (ApiException $e) {
+            self::assertSame(500, $e->statusCode);
+        }
+
+        self::assertSame(1, $http->callCount());
+    }
+
+    public function testRetriesIdempotentPutOnServerError(): void
+    {
+        $http = new MockHttpClient(
+            new Response(500),
+            new Response(200, '{"id":1}'),
+        );
+        $connection = new Connection($this->config(), $http, new SpyRateLimiter(), new FakeClock());
+
+        $connection->requestJson(Method::Put, 'customers/1', body: ['note' => 'x']);
+
+        self::assertSame(2, $http->callCount());
+    }
+
+    public function testCapsAnExcessiveRetryAfter(): void
+    {
+        $http = new MockHttpClient(
+            new Response(429, '', ['retry-after' => '99999999']),
+            new Response(200, '{}'),
+        );
+        $clock = new FakeClock();
+        $config = new ClientConfig(token: 'secret', maxRetryDelay: 120.0);
+        $connection = new Connection($config, $http, new SpyRateLimiter(), $clock);
+
+        $connection->requestJson(Method::Get, 'customers');
+
+        self::assertSame([120.0], $clock->sleeps);
     }
 
     public function testMapsErrorStatusToTypedException(): void

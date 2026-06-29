@@ -73,7 +73,7 @@ final class Client
         $connection = new Connection(
             $config,
             $httpClient ?? new CurlHttpClient($config->timeout, $config->connectTimeout),
-            $rateLimiter ?? new SlidingWindowRateLimiter($config->requestsPerMinute),
+            $rateLimiter ?? new SlidingWindowRateLimiter($config->requestsPerMinute, 60.0),
         );
 
         $this->customers = new CustomerResource($connection);

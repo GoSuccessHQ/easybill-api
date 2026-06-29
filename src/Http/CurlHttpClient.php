@@ -15,6 +15,11 @@ use GoSuccess\Easybill\Exception\TransportException;
 final class CurlHttpClient implements HttpClient
 {
     /**
+     * Reused across requests so cURL keeps the TLS/TCP connection alive.
+     */
+    private ?CurlHandle $handle = null;
+
+    /**
      * @param float $timeout        Maximum duration of the whole request in seconds.
      * @param float $connectTimeout Maximum duration of the connection phase in seconds.
      */
@@ -23,15 +28,19 @@ final class CurlHttpClient implements HttpClient
         private readonly float $connectTimeout = 10.0,
     ) {}
 
+    public function __destruct()
+    {
+        if ($this->handle !== null) {
+            curl_close($this->handle);
+        }
+    }
+
     public function send(Request $request): Response
     {
-        $handle = curl_init();
+        $handle = $this->handle ??= curl_init();
+        curl_reset($handle);
 
-        try {
-            return $this->execute($handle, $request);
-        } finally {
-            curl_close($handle);
-        }
+        return $this->execute($handle, $request);
     }
 
     private function execute(CurlHandle $handle, Request $request): Response
@@ -45,8 +54,8 @@ final class CurlHttpClient implements HttpClient
             \CURLOPT_RETURNTRANSFER => true,
             \CURLOPT_FOLLOWLOCATION => false,
             \CURLOPT_HTTPHEADER => $this->formatHeaders($request->headers),
-            \CURLOPT_TIMEOUT_MS => (int) ($this->timeout * 1000),
-            \CURLOPT_CONNECTTIMEOUT_MS => (int) ($this->connectTimeout * 1000),
+            \CURLOPT_TIMEOUT_MS => $this->milliseconds($this->timeout),
+            \CURLOPT_CONNECTTIMEOUT_MS => $this->milliseconds($this->connectTimeout),
             \CURLOPT_HEADERFUNCTION => function (CurlHandle $_handle, string $line) use (&$responseHeaders): int {
                 $length = \strlen($line);
                 $parts = explode(':', $line, 2);
@@ -82,6 +91,21 @@ final class CurlHttpClient implements HttpClient
             body: \is_string($body) ? $body : '',
             headers: $responseHeaders,
         );
+    }
+
+    /**
+     * Convert a seconds timeout to whole milliseconds for cURL.
+     *
+     * A non-positive value means "no timeout" (cURL's default). A small positive
+     * value is rounded up to at least 1ms so it never collapses to 0 ("no timeout").
+     */
+    private function milliseconds(float $seconds): int
+    {
+        if ($seconds <= 0.0) {
+            return 0;
+        }
+
+        return max(1, (int) round($seconds * 1000));
     }
 
     /**

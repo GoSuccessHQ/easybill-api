@@ -87,7 +87,9 @@ final class Connection
             try {
                 $response = $this->httpClient->send($request);
             } catch (TransportException $e) {
-                if ($attempt < $this->config->maxRetries) {
+                // A transport failure may have reached the server, so only retry
+                // idempotent requests to avoid duplicating writes.
+                if ($this->isIdempotent($method) && $attempt < $this->config->maxRetries) {
                     $this->clock->sleep($this->backoffDelay($attempt));
                     ++$attempt;
 
@@ -103,7 +105,7 @@ final class Connection
                 return $response;
             }
 
-            if ($this->isRetryable($status) && $attempt < $this->config->maxRetries) {
+            if ($this->isRetryable($status, $method) && $attempt < $this->config->maxRetries) {
                 $this->clock->sleep($this->retryDelay($status, $response, $attempt));
                 ++$attempt;
 
@@ -194,9 +196,22 @@ final class Connection
         return $decoded;
     }
 
-    private function isRetryable(int $status): bool
+    /**
+     * A `429` is always safe to retry (the request was rejected, not processed).
+     * A `5xx` may have been processed, so only retry it for idempotent methods.
+     */
+    private function isRetryable(int $status, Method $method): bool
     {
-        return $status === 429 || $status >= 500;
+        if ($status === 429) {
+            return true;
+        }
+
+        return $status >= 500 && $this->isIdempotent($method);
+    }
+
+    private function isIdempotent(Method $method): bool
+    {
+        return $method === Method::Get || $method === Method::Put || $method === Method::Delete;
     }
 
     private function retryDelay(int $status, Response $response, int $attempt): float
@@ -205,7 +220,7 @@ final class Connection
             $retryAfter = RateLimitException::parseRetryAfter($response->header('Retry-After'));
 
             if ($retryAfter !== null) {
-                return (float) $retryAfter;
+                return $this->cap((float) $retryAfter);
             }
         }
 
@@ -214,6 +229,15 @@ final class Connection
 
     private function backoffDelay(int $attempt): float
     {
-        return $this->config->retryBaseDelay * (2 ** $attempt);
+        return $this->cap($this->config->retryBaseDelay * (2 ** $attempt));
+    }
+
+    /**
+     * Clamp a delay to the configured maximum, guarding against a hostile or
+     * malformed `Retry-After` blocking the process for an excessive time.
+     */
+    private function cap(float $delay): float
+    {
+        return min($delay, $this->config->maxRetryDelay);
     }
 }

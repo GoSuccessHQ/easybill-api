@@ -71,9 +71,18 @@ final class SlidingWindowRateLimiter implements RateLimiter
     private function prune(float $now): void
     {
         $threshold = $now - $this->windowSeconds;
+        $expired = 0;
 
-        while ($this->timestamps !== [] && $this->timestamps[0] <= $threshold) {
-            array_shift($this->timestamps);
+        foreach ($this->timestamps as $timestamp) {
+            if ($timestamp > $threshold) {
+                break;
+            }
+
+            ++$expired;
+        }
+
+        if ($expired > 0) {
+            array_splice($this->timestamps, 0, $expired);
         }
     }
 }

@@ -4,9 +4,6 @@ A modern, strongly-typed, **dependency-free** PHP client for the
 [easybill REST API](https://api.easybill.de/rest/v1/swagger.json), built for
 **PHP 8.4+** with first-class **rate-limit handling**.
 
-> [!WARNING]
-> This library is under active development and not yet stable.
-
 ## Features
 
 - **PHP 8.4+**, fully typed `final readonly` DTOs and native enums for every API model.

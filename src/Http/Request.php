@@ -10,6 +10,8 @@ namespace GoSuccess\Easybill\Http;
 final readonly class Request
 {
     /**
+     * @param non-empty-string      $uri     Absolute request URI. Never empty, so a
+     *                                       transport can pass it straight to cURL.
      * @param array<string, string> $headers Map of header name => value.
      */
     public function __construct(

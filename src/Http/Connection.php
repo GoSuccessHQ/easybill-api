@@ -118,6 +118,8 @@ final class Connection
 
     /**
      * @param array<string, scalar|array<int|string, scalar>|null> $query
+     *
+     * @return non-empty-string
      */
     private function buildUri(string $path, array $query): string
     {

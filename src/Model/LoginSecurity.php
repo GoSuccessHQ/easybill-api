@@ -9,11 +9,19 @@ namespace GoSuccess\Easybill\Model;
  */
 final readonly class LoginSecurity extends AbstractModel
 {
+    public ?bool $twoFactorEnabled;
+    public ?bool $recoveryCodesEnabled;
+    public ?bool $notifyOnNewLoginEnabled;
+
     public function __construct(
-        public ?bool $twoFactorEnabled = null,
-        public ?bool $recoveryCodesEnabled = null,
-        public ?bool $notifyOnNewLoginEnabled = null,
-    ) {}
+        ?bool $twoFactorEnabled = null,
+        ?bool $recoveryCodesEnabled = null,
+        ?bool $notifyOnNewLoginEnabled = null,
+    ) {
+        $this->twoFactorEnabled = $twoFactorEnabled;
+        $this->recoveryCodesEnabled = $recoveryCodesEnabled;
+        $this->notifyOnNewLoginEnabled = $notifyOnNewLoginEnabled;
+    }
 
     public static function fromArray(array $data): static
     {

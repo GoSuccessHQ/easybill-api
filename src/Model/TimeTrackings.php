@@ -9,14 +9,29 @@ namespace GoSuccess\Easybill\Model;
  */
 final readonly class TimeTrackings extends AbstractModel implements Listing
 {
+    public int $page;
+    public int $pages;
+    public int $limit;
+    public int $total;
+    /** @var list<TimeTracking> */
+    public array $items;
+
+    /**
+     * @param list<TimeTracking> $items
+     */
     public function __construct(
-        public int $page = 1,
-        public int $pages = 1,
-        public int $limit = 0,
-        public int $total = 0,
-        /** @var list<TimeTracking> */
-        public array $items = [],
-    ) {}
+        int $page = 1,
+        int $pages = 1,
+        int $limit = 0,
+        int $total = 0,
+        array $items = [],
+    ) {
+        $this->page = $page;
+        $this->pages = $pages;
+        $this->limit = $limit;
+        $this->total = $total;
+        $this->items = $items;
+    }
 
     public static function fromArray(array $data): static
     {

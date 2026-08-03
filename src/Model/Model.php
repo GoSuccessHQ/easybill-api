@@ -19,8 +19,10 @@ interface Model
     /**
      * Convert the model into a JSON-serializable payload.
      *
-     * Read-only fields are omitted and `null` values are skipped, so the result
-     * is suitable as a create or (partial) update request body.
+     * Read-only fields are always omitted, and so is every field the caller did
+     * not provide — the result is therefore suitable as a create or partial
+     * update body. A field explicitly passed as `null` (or `[]` for a list) is
+     * serialized as such to clear it server-side; see {@see Undefined}.
      *
      * @return array<string, mixed>
      */

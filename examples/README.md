@@ -12,7 +12,7 @@ php examples/customers.php
 | Script | Shows |
 | --- | --- |
 | [bootstrap.php](bootstrap.php) | Shared client setup (required by the others) |
-| [customers.php](customers.php) | Customer CRUD (create, read, update, delete) |
+| [customers.php](customers.php) | Customer CRUD, partial updates and clearing a field |
 | [pagination.php](pagination.php) | One page vs. lazily iterating all pages |
 | [documents.php](documents.php) | Create an invoice, complete it, download the PDF, send it |
 | [error-handling.php](error-handling.php) | Catching the typed exception hierarchy |

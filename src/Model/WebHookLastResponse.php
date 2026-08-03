@@ -9,11 +9,19 @@ namespace GoSuccess\Easybill\Model;
  */
 final readonly class WebHookLastResponse extends AbstractModel
 {
+    public ?string $date;
+    public ?int $code;
+    public ?string $response;
+
     public function __construct(
-        public ?string $date = null,
-        public ?int $code = null,
-        public ?string $response = null,
-    ) {}
+        ?string $date = null,
+        ?int $code = null,
+        ?string $response = null,
+    ) {
+        $this->date = $date;
+        $this->code = $code;
+        $this->response = $response;
+    }
 
     public static function fromArray(array $data): static
     {

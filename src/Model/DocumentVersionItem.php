@@ -11,10 +11,16 @@ use GoSuccess\Easybill\Enum\FileFormatConfigType;
  */
 final readonly class DocumentVersionItem extends AbstractModel
 {
+    public ?FileFormatConfigType $documentVersionItemType;
+    public ?int $id;
+
     public function __construct(
-        public ?FileFormatConfigType $documentVersionItemType = null,
-        public ?int $id = null,
-    ) {}
+        ?FileFormatConfigType $documentVersionItemType = null,
+        ?int $id = null,
+    ) {
+        $this->documentVersionItemType = $documentVersionItemType;
+        $this->id = $id;
+    }
 
     public static function fromArray(array $data): static
     {

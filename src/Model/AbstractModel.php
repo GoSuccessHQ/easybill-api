@@ -12,6 +12,31 @@ use BackedEnum;
  */
 abstract readonly class AbstractModel implements Model
 {
+    /**
+     * Determine which fields were explicitly set to an empty value and must
+     * therefore be serialized instead of omitted.
+     *
+     * Anything still holding {@see Undefined::Value} was never provided; a `null`
+     * or `[]` that survived reached the constructor from the caller and is meant
+     * to clear the field.
+     *
+     * @param array<string, mixed> $arguments Constructor arguments keyed by API field name.
+     *
+     * @return array<string, true>
+     */
+    protected static function explicitFields(array $arguments): array
+    {
+        $explicit = [];
+
+        foreach ($arguments as $field => $value) {
+            if ($value === null || $value === []) {
+                $explicit[$field] = true;
+            }
+        }
+
+        return $explicit;
+    }
+
     protected static function asString(mixed $value): ?string
     {
         return \is_scalar($value) ? (string) $value : null;

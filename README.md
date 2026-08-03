@@ -58,6 +58,40 @@ $created = $client->customers->create(new Customer(
 ));
 ```
 
+## Partial updates and clearing fields
+
+Models serialize **only what you actually passed**, so an update touches nothing
+else. Because of that, a field you leave out and a field you set to `null` must
+mean two different things:
+
+```php
+use GoSuccess\Easybill\Model\Customer;
+
+// Renames the customer. Every other field keeps its current value.
+$client->customers->update(12345, new Customer(companyName: 'ACME SE'));
+
+// Clears the note: `null` is sent as an explicit JSON null.
+$client->customers->update(12345, new Customer(note: null));
+
+// Same for lists — `[]` empties them.
+$client->customers->update(12345, new Customer(emails: []));
+```
+
+To make a field conditional, fall back to the `Undefined` sentinel — the default
+of every writable parameter — instead of `null`:
+
+```php
+use GoSuccess\Easybill\Model\Undefined;
+
+$client->customers->update(12345, new Customer(
+    note: $clearNote ? null : Undefined::Value,
+));
+```
+
+Reading is unaffected: properties stay plainly typed (`?string`, `list<string>`),
+never sentinel-valued. A model returned by the API carries no intent to clear
+anything, so passing one straight back never nulls out fields.
+
 ## Pagination
 
 Each list endpoint offers `list()` for a single page and `all()` for a lazy

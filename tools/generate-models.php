@@ -343,6 +343,7 @@ $protected = [
     SRC . '/Model/Model.php',
     SRC . '/Model/Listing.php',
     SRC . '/Model/AbstractModel.php',
+    SRC . '/Model/Undefined.php',
 ];
 
 foreach ([SRC . '/Enum', SRC . '/Model'] as $dir) {
@@ -456,7 +457,11 @@ function generateEnum(string $className, string $type, array $values): string
 function generateModel(string $name, array $props, array $readOnly, bool $listing, ?string $listItem): array
 {
     $imports = [];
+    $propDecls = [];
+    $ctorDoc = [];
     $ctorParams = [];
+    $ctorBody = [];
+    $explicitArgs = [];
     $fromAssigns = [];
     $toLines = [];
 
@@ -467,15 +472,16 @@ function generateModel(string $name, array $props, array $readOnly, bool $listin
         $metaDefaults = ['page' => 1, 'pages' => 1, 'limit' => 0, 'total' => 0];
 
         foreach ($metaDefaults as $metaProp => $default) {
-            $ctorParams[] = "        public int \${$metaProp} = {$default},";
-        }
-
-        $ctorParams[] = "        /** @var list<{$itemType}> */\n        public array \$items = [],";
-
-        foreach ($metaDefaults as $metaProp => $default) {
+            $propDecls[] = "    public int \${$metaProp};";
+            $ctorParams[] = "        int \${$metaProp} = {$default},";
+            $ctorBody[] = "        \$this->{$metaProp} = \${$metaProp};";
             $fromAssigns[] = "            {$metaProp}: self::asInt(\$data['{$metaProp}'] ?? null) ?? {$default},";
         }
 
+        $propDecls[] = "    /** @var list<{$itemType}> */\n    public array \$items;";
+        $ctorDoc[] = "     * @param list<{$itemType}> \$items";
+        $ctorParams[] = '        array $items = [],';
+        $ctorBody[] = '        $this->items = $items;';
         $fromAssigns[] = "            items: self::asModelList({$itemType}::class, \$data['items'] ?? null),";
     }
 
@@ -486,6 +492,7 @@ function generateModel(string $name, array $props, array $readOnly, bool $listin
 
         $phpName = camel($jsonKey);
         $type = resolveType($name, $jsonKey, $schema);
+        $writable = !($readOnly[$jsonKey] ?? false);
 
         if (in_array($type['kind'], ['model', 'enum'], true)) {
             $imports[$type['php']] = true;
@@ -495,19 +502,54 @@ function generateModel(string $name, array $props, array $readOnly, bool $listin
             $imports[$type['item']['php']] = true;
         }
 
-        if ($type['kind'] === 'array') {
-            $ctorParams[] = "        /** @var {$type['doc']} */\n        public array \${$phpName} = [],";
-        } elseif ($type['kind'] === 'raw') {
-            $ctorParams[] = "        /** @var {$type['doc']}|null */\n        public ?array \${$phpName} = null,";
-        } else {
-            $ctorParams[] = "        public ?{$type['php']} \${$phpName} = null,";
-        }
+        // A list property is never null; its empty state is `[]`.
+        $isList = $type['kind'] === 'array';
+        $propType = $isList ? 'array' : ($type['kind'] === 'raw' ? '?array' : "?{$type['php']}");
+        $docType = $isList ? $type['doc'] : ($type['kind'] === 'raw' ? "{$type['doc']}|null" : null);
 
-        $fromAssigns[] = '            ' . $phpName . ': ' . fromExpr($jsonKey, $type) . ',';
+        $propDecls[] = $docType !== null
+            ? "    /** @var {$docType} */\n    public {$propType} \${$phpName};"
+            : "    public {$propType} \${$phpName};";
 
-        if (!($readOnly[$jsonKey] ?? false)) {
+        if ($writable) {
+            // Writable fields accept the Undefined sentinel so that an explicit
+            // null (or []) can be told apart from "not provided".
+            $paramType = $isList
+                ? 'array|Undefined'
+                : ($type['kind'] === 'raw' ? 'array|Undefined|null' : "{$type['php']}|Undefined|null");
+
+            if ($docType !== null) {
+                $ctorDoc[] = "     * @param {$docType}|Undefined \${$phpName}";
+            }
+
+            $ctorParams[] = "        {$paramType} \${$phpName} = Undefined::Value,";
+            $empty = $isList ? '[]' : 'null';
+            $ctorBody[] = "        \$this->{$phpName} = \${$phpName} instanceof Undefined ? {$empty} : \${$phpName};";
+            $explicitArgs[] = "            '{$jsonKey}' => \${$phpName},";
             $toLines[] = toLine($jsonKey, $phpName, $type);
+        } else {
+            if ($docType !== null) {
+                $ctorDoc[] = "     * @param {$docType} \${$phpName}";
+            }
+
+            $default = $isList ? '[]' : 'null';
+            $ctorParams[] = "        {$propType} \${$phpName} = {$default},";
+            $ctorBody[] = "        \$this->{$phpName} = \${$phpName};";
         }
+
+        $fromAssigns[] = '            ' . $phpName . ': ' . fromExpr($jsonKey, $type, $writable) . ',';
+    }
+
+    if ($explicitArgs !== []) {
+        $propDecls[] = "    /**\n"
+            . "     * API field names explicitly set to an empty value, which are serialized\n"
+            . "     * as JSON `null` (or `[]`) instead of being omitted.\n"
+            . "     *\n"
+            . "     * @var array<string, true>\n"
+            . "     */\n"
+            . '    private array $explicit;';
+        $ctorBody[] = "        \$this->explicit = self::explicitFields([\n"
+            . implode("\n", $explicitArgs) . "\n        ]);";
     }
 
     $useStatements = '';
@@ -525,7 +567,10 @@ function generateModel(string $name, array $props, array $readOnly, bool $listin
     }
 
     $extends = $listing ? 'extends AbstractModel implements Listing' : 'extends AbstractModel';
+    $declarations = implode("\n", $propDecls);
+    $doc = $ctorDoc === [] ? '' : "    /**\n" . implode("\n", $ctorDoc) . "\n     */\n";
     $ctor = implode("\n", $ctorParams);
+    $body = implode("\n", $ctorBody);
     $from = implode("\n", $fromAssigns);
     $to = implode("\n", $toLines);
 
@@ -541,9 +586,13 @@ function generateModel(string $name, array $props, array $readOnly, bool $listin
          */
         final readonly class {$name} {$extends}
         {
-            public function __construct(
+        {$declarations}
+
+        {$doc}    public function __construct(
         {$ctor}
-            ) {}
+            ) {
+        {$body}
+            }
 
             public static function fromArray(array \$data): static
             {
@@ -569,11 +618,11 @@ function generateModel(string $name, array $props, array $readOnly, bool $listin
 /**
  * @param array{php: string, doc: string, kind: string, item?: array{kind: string, php: string}} $type
  */
-function fromExpr(string $jsonKey, array $type): string
+function fromExpr(string $jsonKey, array $type, bool $writable): string
 {
     $access = "\$data['{$jsonKey}'] ?? null";
 
-    return match ($type['kind']) {
+    $expr = match ($type['kind']) {
         'scalar' => match ($type['php']) {
             'int' => "self::asInt({$access})",
             'float' => "self::asFloat({$access})",
@@ -586,6 +635,17 @@ function fromExpr(string $jsonKey, array $type): string
         'array' => arrayFromExpr($access, $type['item']),
         default => $access,
     };
+
+    if (!$writable) {
+        return $expr;
+    }
+
+    // A response never carries an intent to clear a field: fall back to the
+    // sentinel so a round-tripped model omits absent values instead of nulling
+    // them out server-side.
+    return $type['kind'] === 'array'
+        ? "{$expr} ?: Undefined::Value"
+        : "{$expr} ?? Undefined::Value";
 }
 
 /**
@@ -611,6 +671,13 @@ function arrayFromExpr(string $access, array $item): string
 function toLine(string $jsonKey, string $phpName, array $type): string
 {
     $prop = "\$this->{$phpName}";
+    $empty = $type['kind'] === 'array' ? '[]' : 'null';
+
+    // Fields explicitly set to an empty value are sent as such to clear them;
+    // untouched ones stay out of the payload so the API keeps their value.
+    $clear = "        } elseif (isset(\$this->explicit['{$jsonKey}'])) {\n"
+        . "            \$data['{$jsonKey}'] = {$empty};\n"
+        . '        }';
 
     // Nested models: skip when the serialized object would be empty (e.g. read-only objects).
     if ($type['kind'] === 'model') {
@@ -619,7 +686,7 @@ function toLine(string $jsonKey, string $phpName, array $type): string
             . "            if (\$nested !== []) {\n"
             . "                \$data['{$jsonKey}'] = \$nested;\n"
             . "            }\n"
-            . '        }';
+            . $clear;
     }
 
     $condition = $type['kind'] === 'array' ? "{$prop} !== []" : "{$prop} !== null";
@@ -630,7 +697,9 @@ function toLine(string $jsonKey, string $phpName, array $type): string
         default => $prop,
     };
 
-    return "        if ({$condition}) {\n            \$data['{$jsonKey}'] = {$value};\n        }";
+    return "        if ({$condition}) {\n"
+        . "            \$data['{$jsonKey}'] = {$value};\n"
+        . $clear;
 }
 
 /**

@@ -11,14 +11,28 @@ use GoSuccess\Easybill\Enum\FileFormatConfigType;
  */
 final readonly class FileFormatConfig extends AbstractModel
 {
+    public ?FileFormatConfigType $type;
+    /**
+     * API field names explicitly set to an empty value, which are serialized
+     * as JSON `null` (or `[]`) instead of being omitted.
+     *
+     * @var array<string, true>
+     */
+    private array $explicit;
+
     public function __construct(
-        public ?FileFormatConfigType $type = null,
-    ) {}
+        FileFormatConfigType|Undefined|null $type = Undefined::Value,
+    ) {
+        $this->type = $type instanceof Undefined ? null : $type;
+        $this->explicit = self::explicitFields([
+            'type' => $type,
+        ]);
+    }
 
     public static function fromArray(array $data): static
     {
         return new self(
-            type: self::asEnum(FileFormatConfigType::class, $data['type'] ?? null),
+            type: self::asEnum(FileFormatConfigType::class, $data['type'] ?? null) ?? Undefined::Value,
         );
     }
 
@@ -27,6 +41,8 @@ final readonly class FileFormatConfig extends AbstractModel
         $data = [];
         if ($this->type !== null) {
             $data['type'] = $this->type->value;
+        } elseif (isset($this->explicit['type'])) {
+            $data['type'] = null;
         }
 
         return $data;

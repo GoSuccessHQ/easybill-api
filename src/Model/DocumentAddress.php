@@ -9,21 +9,49 @@ namespace GoSuccess\Easybill\Model;
  */
 final readonly class DocumentAddress extends AbstractModel
 {
+    public ?int $salutation;
+    public ?bool $personal;
+    public ?string $title;
+    public ?string $firstName;
+    public ?string $lastName;
+    public ?string $suffix1;
+    public ?string $suffix2;
+    public ?string $companyName;
+    public ?string $street;
+    public ?string $zipCode;
+    public ?string $city;
+    public ?string $state;
+    public ?string $country;
+
     public function __construct(
-        public ?int $salutation = null,
-        public ?bool $personal = null,
-        public ?string $title = null,
-        public ?string $firstName = null,
-        public ?string $lastName = null,
-        public ?string $suffix1 = null,
-        public ?string $suffix2 = null,
-        public ?string $companyName = null,
-        public ?string $street = null,
-        public ?string $zipCode = null,
-        public ?string $city = null,
-        public ?string $state = null,
-        public ?string $country = null,
-    ) {}
+        ?int $salutation = null,
+        ?bool $personal = null,
+        ?string $title = null,
+        ?string $firstName = null,
+        ?string $lastName = null,
+        ?string $suffix1 = null,
+        ?string $suffix2 = null,
+        ?string $companyName = null,
+        ?string $street = null,
+        ?string $zipCode = null,
+        ?string $city = null,
+        ?string $state = null,
+        ?string $country = null,
+    ) {
+        $this->salutation = $salutation;
+        $this->personal = $personal;
+        $this->title = $title;
+        $this->firstName = $firstName;
+        $this->lastName = $lastName;
+        $this->suffix1 = $suffix1;
+        $this->suffix2 = $suffix2;
+        $this->companyName = $companyName;
+        $this->street = $street;
+        $this->zipCode = $zipCode;
+        $this->city = $city;
+        $this->state = $state;
+        $this->country = $country;
+    }
 
     public static function fromArray(array $data): static
     {

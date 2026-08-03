@@ -52,7 +52,7 @@ final readonly class SEPAPayment extends AbstractModel
             debitorIban: self::asString($data['debitor_iban'] ?? null),
             debitorName: self::asString($data['debitor_name'] ?? null),
             debitorAddressLine1: self::asString($data['debitor_address_line_1'] ?? null),
-            debitorAddressLine2: self::asString($data['debitor_address_line2'] ?? null),
+            debitorAddressLine2: self::asString($data['debitor_address_line_2'] ?? null),
             debitorCountry: self::asString($data['debitor_country'] ?? null),
             documentId: self::asInt($data['document_id'] ?? null),
             exportAt: self::asString($data['export_at'] ?? null),
@@ -98,7 +98,7 @@ final readonly class SEPAPayment extends AbstractModel
             $data['debitor_address_line_1'] = $this->debitorAddressLine1;
         }
         if ($this->debitorAddressLine2 !== null) {
-            $data['debitor_address_line2'] = $this->debitorAddressLine2;
+            $data['debitor_address_line_2'] = $this->debitorAddressLine2;
         }
         if ($this->debitorCountry !== null) {
             $data['debitor_country'] = $this->debitorCountry;

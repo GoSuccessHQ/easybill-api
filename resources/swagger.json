@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "version": "1.98.1",
+    "version": "1.99.0",
     "title": "easybill REST API",
     "description": "\nThe first version of the easybill REST API. [CHANGELOG](https://api.easybill.de/rest/v1/CHANGELOG.md)\n\n## Authentication\n\nYou can choose between two available methods: `Basic Auth` or `Bearer Token`.\n\nIn each HTTP request, one of the following HTTP headers is required:\n\n```\n# Basic Auth\nAuthorization: Basic base64_encode('<email>:<api_key>')\n# Bearer Token\nAuthorization: Bearer <api_key>\n```\n\n## Limitations\n\n### Request Limit\n\n* PLUS: 10 requests per minute\n* BUSINESS: 60 requests per minute\n\nIf the limit is exceeded, you will receive the HTTP error: `429 Too Many Requests`\n\n### Result Limit\n\nAll result lists are limited to 100 by default. This limit can be increased by the query parameter `limit` to a maximum of 1000.\n\n## Query filter\n\nMany list resources can be filtered. In `/documents` you can filter e.g. by number with `/documents?number=111028654`. If you want to filter multiple numbers, you can either enter them separated by commas `/documents?number=111028654,222006895` or as an array `/documents?number[]=111028654&number[]=222006895`.\n\n**Warning**: The maximum size of an HTTP request line in bytes is 4094. If this limit is exceeded, you will receive the HTTP error: `414 Request-URI Too Large`\n\n### Escape commas in query\n\nYou can escape commans in query `name=Patrick\\, Peter` if you submit the header `X-Easybill-Escape: true` in your request.\n\n## Property login_id\n\nThis is the login of your admin or employee account.\n\n## Date and Date-Time format\nPlease use the timezone `Europe/Berlin`.\n* **date** = *Y-m-d* = `2016-12-31`\n* **date-time** = *Y-m-d H:i:s* = `2016-12-31 03:13:37`\n\nDate or datetime can be `null` because the attributes have been added later and the entry is older."
   },
@@ -1562,6 +1562,7 @@
           "document"
         ],
         "summary": "To complete a document.",
+        "description": "Not allowed for documents of type `RECURRING`. Recurring documents cannot be finalized; update the document with the desired recurring status instead (`PUT /documents/{id}` with `recurring_options.status`).",
         "parameters": [
           {
             "in": "path",
@@ -1587,6 +1588,9 @@
             "schema": {
               "$ref": "#/definitions/Document"
             }
+          },
+          "400": {
+            "description": "Recurring documents cannot be finalized. Update the document with the desired recurring status instead (`PUT /documents/{id}` with `recurring_options.status`)."
           },
           "404": {
             "description": "Not found"
@@ -4488,6 +4492,8 @@
             "zugferd2_2",
             "zugferd2_4_en16931",
             "zugferd2_4_extended",
+            "zugferd2_5_en16931",
+            "zugferd2_5_extended",
             "xrechnung2_1_xml",
             "xrechnung2_2_xml",
             "xrechnung2_3_xml",
@@ -5633,6 +5639,8 @@
             "zugferd2_2",
             "zugferd2_4_en16931",
             "zugferd2_4_extended",
+            "zugferd2_5_en16931",
+            "zugferd2_5_extended",
             "xrechnung2_2_xml",
             "xrechnung2_3_xml",
             "xrechnung3_0_xml"
@@ -5688,7 +5696,9 @@
             "zugferd1",
             "zugferd2_2",
             "zugferd2_4_en16931",
-            "zugferd2_4_extended"
+            "zugferd2_4_extended",
+            "zugferd2_5_en16931",
+            "zugferd2_5_extended"
           ]
         },
         "id": {
@@ -6709,10 +6719,14 @@
       "type": "object",
       "properties": {
         "to": {
-          "type": "string"
+          "type": "string",
+          "example": "one@example.com, two@example.com",
+          "description": "Recipient(s). When sending via email, multiple addresses may be provided separated by comma, semicolon or newline."
         },
         "cc": {
-          "type": "string"
+          "type": "string",
+          "example": "three@example.com; four@example.com",
+          "description": "Carbon copy recipient(s) for email sends. Multiple addresses may be provided separated by comma, semicolon or newline."
         },
         "from": {
           "type": "string"
@@ -6744,6 +6758,8 @@
             "zugferd2_2",
             "zugferd2_4_en16931",
             "zugferd2_4_extended",
+            "zugferd2_5_en16931",
+            "zugferd2_5_extended",
             "xrechnung",
             "xrechnung_xml",
             "xrechnung2_2_xml",
@@ -6780,11 +6796,13 @@
         },
         "to": {
           "type": "string",
-          "example": "example@easybill.de"
+          "example": "one@example.com\ntwo@example.com",
+          "description": "Recipient(s). Multiple email recipients are returned separated by newline."
         },
         "cc": {
           "type": "string",
-          "example": null
+          "example": null,
+          "description": "Carbon copy recipient(s). Multiple email recipients are returned separated by newline."
         },
         "from": {
           "type": "string",
@@ -6857,6 +6875,8 @@
             "zugferd2_2",
             "zugferd2_4_en16931",
             "zugferd2_4_extended",
+            "zugferd2_5_en16931",
+            "zugferd2_5_extended",
             "xrechnung",
             "xrechnung_xml"
           ],
@@ -6970,7 +6990,7 @@
           "example": "Bahnhofstr. 1",
           "description": "Mandatory if type is DEBIT and the debitor's IBAN belongs to a country outside the EEA"
         },
-        "debitor_address_line2": {
+        "debitor_address_line_2": {
           "type": "string",
           "maxLength": 70,
           "example": "8001 Zürich",

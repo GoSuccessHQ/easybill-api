@@ -2,6 +2,9 @@
 
 Mark a document as done (completed).
 
+Not allowed for documents of type `RECURRING`; the API rejects those with a `400`.
+Update the recurring status instead via `update()` with `recurring_options.status`.
+
 ## Signature
 
 ```php

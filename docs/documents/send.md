@@ -2,6 +2,10 @@
 
 Send a document via the given channel.
 
+For `DocumentSendType::Email`, `PostBoxRequest::$to` and `$cc` accept multiple
+addresses separated by comma, semicolon or newline. Every address in `$to` is
+delivered as a `To:` recipient.
+
 ## Signature
 
 ```php

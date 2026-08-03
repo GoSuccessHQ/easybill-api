@@ -70,6 +70,9 @@ final class DocumentResource extends AbstractResource
 
     /**
      * Mark a document as done (completed).
+     *
+     * Not allowed for documents of type `RECURRING`; the API rejects those with a `400`.
+     * Update the recurring status instead via {@see update()} with `recurring_options.status`.
      */
     public function done(int $id, ?string $reasonForChange = null): Document
     {
@@ -96,6 +99,10 @@ final class DocumentResource extends AbstractResource
 
     /**
      * Send a document via the given channel.
+     *
+     * For {@see DocumentSendType::Email}, `PostBoxRequest::$to` and `$cc` accept multiple
+     * addresses separated by comma, semicolon or newline. Every address in `$to` is
+     * delivered as a `To:` recipient.
      */
     public function send(int $id, DocumentSendType $type, PostBoxRequest $request): void
     {

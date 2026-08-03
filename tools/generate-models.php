@@ -14,11 +14,12 @@ declare(strict_types=1);
  *   php tools/generate-models.php [path-or-url]
  *
  * Without an argument it reads the committed snapshot (resources/swagger.json),
- * so generation is deterministic and offline. To refresh from the live API:
- *   php tools/generate-models.php https://api.easybill.de/rest/v1/swagger.json > resources/swagger.json
+ * so generation is deterministic and offline. To refresh from the live API,
+ * update the snapshot first and then regenerate from it:
+ *   curl -s https://api.easybill.de/rest/v1/swagger.json -o resources/swagger.json
+ *   php tools/generate-models.php
  */
 
-const SPEC_URL = 'https://api.easybill.de/rest/v1/swagger.json';
 const SPEC_SNAPSHOT = __DIR__ . '/../resources/swagger.json';
 const SRC = __DIR__ . '/../src';
 const NS = 'GoSuccess\\Easybill';

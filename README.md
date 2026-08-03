@@ -171,11 +171,15 @@ composer cs-fix                        # apply code style
 composer check                         # php-cs-fixer + phpstan (level max) + phpunit
 ```
 
-To refresh against the live API, regenerate the snapshot first:
+To refresh against the live API, update the snapshot first and then rerun the
+generators above:
 
 ```bash
-php tools/generate-models.php https://api.easybill.de/rest/v1/swagger.json
 curl -s https://api.easybill.de/rest/v1/swagger.json -o resources/swagger.json
+php tools/generate-models.php
+php tools/generate-resources.php
+php tools/generate-docs.php
+composer cs-fix
 ```
 
 CI regenerates everything and fails if the committed output is out of date.

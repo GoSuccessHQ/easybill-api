@@ -55,8 +55,9 @@ foreach ($propertyByClass as $class => $property) {
             continue;
         }
 
-        $summary = docSummary($method);
-        $page = renderPage($property, $method, $summary);
+        $description = docDescription($method);
+        $summary = explode("\n", $description)[0];
+        $page = renderPage($property, $method, $description);
         $file = "{$dir}/{$method->getName()}.md";
         file_put_contents($file, $page);
 
@@ -75,7 +76,12 @@ printf("Generated %d documentation pages.\n", $pageCount);
 
 // --- Rendering -------------------------------------------------------------
 
-function docSummary(ReflectionMethod $method): string
+/**
+ * The full doc block description: every line up to the first annotation, with
+ * inline `{@see ...}` tags rendered as code spans. The first line doubles as the
+ * one-line summary used in the index.
+ */
+function docDescription(ReflectionMethod $method): string
 {
     $doc = $method->getDocComment();
 
@@ -83,18 +89,28 @@ function docSummary(ReflectionMethod $method): string
         return '';
     }
 
+    $lines = [];
+
     foreach (explode("\n", $doc) as $line) {
         $line = trim($line, " \t*/");
 
-        if ($line !== '' && !str_starts_with($line, '@')) {
-            return $line;
+        if (str_starts_with($line, '@')) {
+            break;
         }
+
+        if ($line === '' && $lines === []) {
+            continue;
+        }
+
+        $lines[] = $line;
     }
 
-    return '';
+    $description = rtrim(implode("\n", $lines));
+
+    return preg_replace('/\{@see ([^}]+)\}/', '`$1`', $description) ?? $description;
 }
 
-function renderPage(string $property, ReflectionMethod $method, string $summary): string
+function renderPage(string $property, ReflectionMethod $method, string $description): string
 {
     $name = $method->getName();
     $signature = renderSignature($method);
@@ -105,8 +121,8 @@ function renderPage(string $property, ReflectionMethod $method, string $summary)
 
     $page = "# `{$property}->{$name}()`\n\n";
 
-    if ($summary !== '') {
-        $page .= "{$summary}\n\n";
+    if ($description !== '') {
+        $page .= "{$description}\n\n";
     }
 
     if ($endpoint !== null) {

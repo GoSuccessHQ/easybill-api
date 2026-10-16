@@ -15,6 +15,7 @@ A modern, strongly-typed, **dependency-free** PHP client for the
   reliably advertise the limit in response headers. The client therefore throttles requests
   **proactively** and the limit is **freely configurable**.
 - Automatic retry with exponential backoff on `429` / transient errors, honoring `Retry-After`
+  (`retryOnRateLimit: false` makes a `429` throw at once, while transient errors are still retried)
   when the API provides it.
 - Typed exception hierarchy for every documented HTTP error.
 - Lazy pagination over all result pages.

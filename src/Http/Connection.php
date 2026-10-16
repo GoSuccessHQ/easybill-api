@@ -199,13 +199,14 @@ final class Connection
     }
 
     /**
-     * A `429` is always safe to retry (the request was rejected, not processed).
-     * A `5xx` may have been processed, so only retry it for idempotent methods.
+     * A `429` is always safe to retry (the request was rejected, not processed),
+     * unless the caller turned that off. A `5xx` may have been processed, so only
+     * retry it for idempotent methods.
      */
     private function isRetryable(int $status, Method $method): bool
     {
         if ($status === 429) {
-            return true;
+            return $this->config->retryOnRateLimit;
         }
 
         return $status >= 500 && $this->isIdempotent($method);

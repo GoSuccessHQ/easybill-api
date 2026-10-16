@@ -29,13 +29,17 @@ final class ClientConfig
      * @param string $baseUri           Base URI of the API (without a trailing slash).
      * @param int    $maxRetries        How often a failed request (429, 5xx, network error) is retried.
      *                                  Only idempotent requests (GET, PUT, DELETE) are retried on 5xx
-     *                                  and transport errors; a 429 is always retried.
+     *                                  and transport errors; a 429 is retried unless
+     *                                  `$retryOnRateLimit` is off.
      * @param float  $retryBaseDelay    Base delay in seconds for exponential backoff between retries.
      * @param float  $maxRetryDelay     Upper bound in seconds for any single retry wait (also caps a
      *                                  server-provided `Retry-After`).
      * @param string $userAgent         Value of the User-Agent header.
      * @param float  $timeout           Maximum duration of a whole request in seconds (default transport).
      * @param float  $connectTimeout    Maximum duration of the connection phase in seconds (default transport).
+     * @param bool   $retryOnRateLimit  Wait for `Retry-After` and retry a 429. Off, a 429 throws the
+     *                                  RateLimitException at once, while 5xx and transport errors are
+     *                                  still retried. For callers that must answer within a deadline.
      */
     public function __construct(
         public readonly string $token,
@@ -47,6 +51,7 @@ final class ClientConfig
         public readonly string $userAgent = self::DEFAULT_USER_AGENT,
         public readonly float $timeout = 30.0,
         public readonly float $connectTimeout = 10.0,
+        public readonly bool $retryOnRateLimit = true,
     ) {
         if (trim($token) === '') {
             throw new InvalidArgumentException('The API token must not be empty.');

@@ -7,6 +7,7 @@ namespace GoSuccess\Easybill\Tests\Unit\Http;
 use GoSuccess\Easybill\ClientConfig;
 use GoSuccess\Easybill\Exception\ApiException;
 use GoSuccess\Easybill\Exception\NotFoundException;
+use GoSuccess\Easybill\Exception\RateLimitException;
 use GoSuccess\Easybill\Exception\TransportException;
 use GoSuccess\Easybill\Http\Connection;
 use GoSuccess\Easybill\Http\Method;
@@ -36,6 +37,38 @@ final class ConnectionTest extends TestCase
         self::assertSame(2, $http->callCount());
         self::assertSame(2, $rateLimiter->acquireCount);
         self::assertSame([1.0], $clock->sleeps); // first backoff = retryBaseDelay * 2^0
+    }
+
+    public function testFailsAt429RightAwayWhenRateLimitsAreNotRetried(): void
+    {
+        $http = new MockHttpClient(
+            new Response(429, '', ['retry-after' => '5']),
+            new Response(200, '{}'),
+        );
+        $clock = new FakeClock();
+        $connection = new Connection(new ClientConfig(token: 'secret', retryOnRateLimit: false), $http, new SpyRateLimiter(), $clock);
+
+        try {
+            $connection->requestJson(Method::Get, 'customers');
+            self::fail('Expected a RateLimitException.');
+        } catch (RateLimitException $e) {
+            self::assertSame(5, $e->retryAfter);
+        }
+
+        self::assertSame(1, $http->callCount());
+        self::assertSame([], $clock->sleeps);
+    }
+
+    public function testStillRetriesServerAndTransportErrorsWhenRateLimitsAreNotRetried(): void
+    {
+        $http = new MockHttpClient(new Response(503, '{}'), new TransportException('reset'), new Response(200, '{}'));
+        $clock = new FakeClock();
+        $connection = new Connection(new ClientConfig(token: 'secret', retryBaseDelay: 1.0, retryOnRateLimit: false), $http, new SpyRateLimiter(), $clock);
+
+        $connection->requestJson(Method::Get, 'customers');
+
+        self::assertSame(3, $http->callCount());
+        self::assertSame([1.0, 2.0], $clock->sleeps);
     }
 
     public function testHonorsRetryAfterHeaderOn429(): void

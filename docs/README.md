@@ -80,7 +80,7 @@ One page per resource method. See [examples/](../examples/) for runnable scripts
 - [`convert()`](documents/convert.md) — Convert a document into another type (e.g. an offer into an invoice).
 - [`pdf()`](documents/pdf.md) — Download the document as a PDF.
 - [`jpg()`](documents/jpg.md) — Download the document as a JPG image.
-- [`downloadFile()`](documents/downloadFile.md) — Download the document file (e.g. the raw e-invoice XML or PDF).
+- [`downloadFile()`](documents/downloadFile.md) — Download the document file in the format configured on the document.
 - [`versions()`](documents/versions.md) — List the versions of a document.
 - [`version()`](documents/version.md) — Fetch a single version of a document.
 - [`downloadVersionItem()`](documents/downloadVersionItem.md) — Download a single item of a document version.

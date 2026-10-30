@@ -139,11 +139,15 @@ final class DocumentResource extends AbstractResource
     }
 
     /**
-     * Download the document file (e.g. the raw e-invoice XML or PDF).
+     * Download the document file in the format configured on the document.
+     *
+     * The default `application/pdf` returns the e-invoice PDF with embedded XML for a
+     * ZUGFeRD document; use `application/xml;format=xrechnung` for the raw XRechnung XML.
+     * easybill rejects `application/octet-stream` and wildcards with 406/400.
      */
-    public function downloadFile(int $id): string
+    public function downloadFile(int $id, string $accept = 'application/pdf'): string
     {
-        return $this->download(self::PATH . "/{$id}/download");
+        return $this->download(self::PATH . "/{$id}/download", accept: $accept);
     }
 
     /**
